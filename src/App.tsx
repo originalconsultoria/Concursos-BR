@@ -93,8 +93,17 @@ function Sidebar() {
 function BottomNav() {
   const location = useLocation();
 
+  const getShortLabel = (label: string) => {
+    switch (label) {
+      case 'Oportunidades': return 'Início';
+      case 'Meus Concursos': return 'Salvos';
+      case 'Configurações': return 'Ajustes';
+      default: return label;
+    }
+  };
+
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center pb-safe z-50 px-2 h-16">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200 flex justify-around items-center pb-safe z-50 px-1 h-16">
       {links.map((link) => {
         const Icon = link.icon;
         const isActive = location.pathname === link.to;
@@ -110,8 +119,13 @@ function BottomNav() {
             {isActive && (
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-indigo-600 rounded-b-full" />
             )}
-            <Icon size={22} className={clsx(isActive && "scale-110")} />
-            <span className={clsx("text-[10px] font-bold tracking-tight uppercase", isActive ? "opacity-100" : "opacity-70")}>{link.label}</span>
+            <Icon size={22} className={clsx("transition-transform duration-200", isActive && "scale-110 -translate-y-0.5")} />
+            <span className={clsx(
+              "text-[9px] sm:text-[10px] font-bold tracking-tight uppercase whitespace-nowrap transition-all duration-200", 
+              isActive ? "opacity-100" : "opacity-70"
+            )}>
+              {getShortLabel(link.label)}
+            </span>
           </Link>
         );
       })}

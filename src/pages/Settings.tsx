@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, AlertCircle, User, MapPin, Globe, GraduationCap, Layout, Bell, Mail, Smartphone, Trophy, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, User, MapPin, Globe, GraduationCap, Layout, Bell, Mail, Smartphone, Trophy, RefreshCw, CheckCircle2, LogOut, Save } from 'lucide-react';
 import { useConcursoStore, ScoringRule, NotificationSettings } from '../store';
 import { ESFERA_PATTERNS, MODALIDADE_PATTERNS, BRAZILIAN_UFS, ESCOLARIDADE_OPTIONS } from '../constants';
 import clsx from 'clsx';
+import { auth } from '../lib/firebase';
+import { signOut } from 'firebase/auth';
+import { saveUserSettings } from '../services/firebaseSync';
 
 type TabType = 'perfil' | 'pontuacao' | 'notificacoes';
 
 export default function Settings() {
   const { 
+    user,
     scoringRules, addScoringRule, removeScoringRule, updateScoringRule,
     userProfileScoring, updateUserProfileScoring,
     notificationSettings, updateNotificationSettings
@@ -16,6 +20,8 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState<TabType>('perfil');
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
   const handleRecalculate = () => {
     setIsRecalculating(true);
@@ -25,6 +31,20 @@ export default function Settings() {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     }, 800);
+  };
+
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    try {
+      await saveUserSettings();
+      setShowSaveSuccess(true);
+      setTimeout(() => setShowSaveSuccess(false), 3000);
+      handleRecalculate();
+    } catch (error) {
+      console.error("Failed to save settings", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddRule = () => {
@@ -78,11 +98,40 @@ export default function Settings() {
     updateUserProfileScoring({ escolaridades_preferidas: currentEscolaridades });
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error signing out', error);
+    }
+  };
+
   return (
     <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto px-4 sm:px-0 pb-12">
-      <div className="py-4 sm:py-0">
-        <h2 className="text-3xl font-black text-slate-900 tracking-tight">Configurações</h2>
-        <p className="text-slate-500 text-sm sm:text-base font-medium">Personalize suas preferências e regras de pontuação</p>
+      <div className="py-4 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Configurações</h2>
+          <p className="text-slate-500 text-sm sm:text-base font-medium">Personalize suas preferências e regras de pontuação</p>
+        </div>
+        <button
+          onClick={handleSaveSettings}
+          disabled={isSaving}
+          className={clsx(
+            "flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed",
+            showSaveSuccess 
+              ? "bg-emerald-500 text-white shadow-emerald-200" 
+              : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100"
+          )}
+        >
+          {isSaving ? (
+            <RefreshCw size={20} className="animate-spin" />
+          ) : showSaveSuccess ? (
+            <CheckCircle2 size={20} />
+          ) : (
+            <Save size={20} />
+          )}
+          <span>{isSaving ? 'Salvando...' : showSaveSuccess ? 'Salvo com Sucesso' : 'Salvar Configurações'}</span>
+        </button>
       </div>
 
       {/* Tab Navigation */}
@@ -123,21 +172,29 @@ export default function Settings() {
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
         {activeTab === 'perfil' && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <User className="text-indigo-600 shrink-0" size={20} />
-                <h3 className="text-lg font-bold text-slate-800">Perfil do Usuário</h3>
+            {/* Profile Header */}
+            <div className="p-8 border-b border-slate-100 flex flex-col items-center justify-center space-y-4 bg-slate-50/50">
+              <div className="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-md">
+                {user?.photoURL ? (
+                  <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <User className="text-indigo-400" size={40} />
+                )}
+              </div>
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-slate-900">{user?.displayName || 'Usuário'}</h3>
+                <p className="text-sm text-slate-500 font-medium">{user?.email}</p>
               </div>
             </div>
             
             <div className="p-6 space-y-8">
               {/* UFs Desejadas */}
-              <div className="space-y-4">
+              <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
                 <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm uppercase tracking-wider">
-                  <MapPin size={16} className="text-slate-400 shrink-0" />
+                  <MapPin size={18} className="text-indigo-500 shrink-0" />
                   <span>Estados (UFs) Desejados</span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2.5">
                   {BRAZILIAN_UFS.map(uf => {
                     const isActive = !!(userProfileScoring.ufs_desejadas || {})[uf];
                     return (
@@ -145,10 +202,10 @@ export default function Settings() {
                         key={uf}
                         onClick={() => toggleUf(uf)}
                         className={clsx(
-                          "px-3 py-1.5 rounded-full text-sm font-bold border transition-all",
+                          "px-4 py-2.5 rounded-xl text-sm font-bold border transition-all active:scale-95",
                           isActive 
                             ? "bg-indigo-100 text-indigo-700 border-indigo-200 shadow-sm" 
-                            : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
+                            : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                         )}
                       >
                         {uf}
@@ -159,12 +216,12 @@ export default function Settings() {
               </div>
 
               {/* Esferas Preferidas */}
-              <div className="space-y-4">
+              <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
                 <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm uppercase tracking-wider">
-                  <Globe size={16} className="text-slate-400 shrink-0" />
+                  <Globe size={18} className="text-emerald-500 shrink-0" />
                   <span>Esferas Preferidas</span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2.5">
                   {[...Object.keys(ESFERA_PATTERNS), 'Federal', 'Estadual', 'Municipal'].map(esfera => {
                     const isActive = !!(userProfileScoring.esferas_preferidas || {})[esfera];
                     return (
@@ -172,10 +229,10 @@ export default function Settings() {
                         key={esfera}
                         onClick={() => toggleEsfera(esfera)}
                         className={clsx(
-                          "px-3 py-1.5 rounded-full text-sm font-bold border transition-all",
+                          "px-4 py-2.5 rounded-xl text-sm font-bold border transition-all active:scale-95",
                           isActive 
                             ? "bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm" 
-                            : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
+                            : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                         )}
                       >
                         {esfera}
@@ -186,12 +243,12 @@ export default function Settings() {
               </div>
 
               {/* Modalidades Preferidas */}
-              <div className="space-y-4">
+              <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
                 <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm uppercase tracking-wider">
-                  <Layout size={16} className="text-slate-400 shrink-0" />
+                  <Layout size={18} className="text-amber-500 shrink-0" />
                   <span>Modalidades Preferidas</span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2.5">
                   {Object.keys(MODALIDADE_PATTERNS).map(modalidade => {
                     const isActive = !!(userProfileScoring.modalidades_preferidas || {})[modalidade];
                     return (
@@ -199,10 +256,10 @@ export default function Settings() {
                         key={modalidade}
                         onClick={() => toggleModalidade(modalidade)}
                         className={clsx(
-                          "px-3 py-1.5 rounded-full text-sm font-bold border transition-all",
+                          "px-4 py-2.5 rounded-xl text-sm font-bold border transition-all active:scale-95",
                           isActive 
                             ? "bg-amber-100 text-amber-700 border-amber-200 shadow-sm" 
-                            : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
+                            : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                         )}
                       >
                         {modalidade}
@@ -213,12 +270,12 @@ export default function Settings() {
               </div>
 
               {/* Escolaridade Alvo */}
-              <div className="space-y-4">
+              <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
                 <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm uppercase tracking-wider">
-                  <GraduationCap size={16} className="text-slate-400 shrink-0" />
+                  <GraduationCap size={18} className="text-blue-500 shrink-0" />
                   <span>Nível de Escolaridade Alvo</span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2.5">
                   {ESCOLARIDADE_OPTIONS.map(escolaridade => {
                     const isActive = !!(userProfileScoring.escolaridades_preferidas || {})[escolaridade];
                     return (
@@ -226,10 +283,10 @@ export default function Settings() {
                         key={escolaridade}
                         onClick={() => toggleEscolaridade(escolaridade)}
                         className={clsx(
-                          "px-3 py-1.5 rounded-full text-sm font-bold border transition-all",
+                          "px-4 py-2.5 rounded-xl text-sm font-bold border transition-all active:scale-95",
                           isActive 
                             ? "bg-blue-100 text-blue-700 border-blue-200 shadow-sm" 
-                            : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
+                            : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                         )}
                       >
                         {escolaridade}
@@ -237,6 +294,17 @@ export default function Settings() {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Logout Button */}
+              <div className="pt-4">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center space-x-2 bg-rose-50 text-rose-600 border border-rose-200 px-4 py-3.5 rounded-xl font-bold hover:bg-rose-100 transition-colors active:scale-95"
+                >
+                  <LogOut size={20} />
+                  <span>Sair da Conta</span>
+                </button>
               </div>
             </div>
           </div>
