@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Map as MapIcon, Settings as SettingsIcon, Bookmark, User as UserIcon, Cloud, CloudOff, RefreshCw, CheckCircle2 } from 'lucide-react';
 import clsx from 'clsx';
@@ -8,6 +9,7 @@ import Settings from './pages/Settings';
 import Auth from './pages/Auth';
 import { Logo } from './components/Logo';
 import { useConcursoStore } from './store';
+import { fetchGlobalConcursos } from './services/firebaseSync';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Oportunidades' },
@@ -130,6 +132,10 @@ function MobileHeader() {
 }
 
 export default function App() {
+  useEffect(() => {
+    fetchGlobalConcursos();
+  }, []);
+
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">

@@ -1,13 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Check, X, Search, Filter, ArrowUp, ArrowDown, ArrowUpDown, Download, ChevronDown, ChevronRight, BookOpen, Briefcase, Globe, Layout, ListChecks, Star, MapPin, Trophy, ExternalLink, RefreshCw, Calendar, Trash2 } from 'lucide-react';
+import { Check, X, Search, Filter, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown, ChevronRight, BookOpen, Briefcase, Globe, Layout, ListChecks, Star, MapPin, Trophy, ExternalLink, RefreshCw, Calendar, Trash2 } from 'lucide-react';
 import { useConcursoStore, Concurso } from '../store';
-import { CSVUpload } from '../components/CSVUpload';
 import { StatusBadge } from '../components/StatusBadge';
 import { calculateScore } from '../utils/scoring';
 import { getEditalStatus, parseNamedLinks } from '../utils/concursoUtils';
-import { fetchGlobalConcursos } from '../services/firebaseSync';
 import clsx from 'clsx';
-import Papa from 'papaparse';
 
 type SortKey = keyof Concurso | 'status' | 'score';
 
@@ -133,7 +130,6 @@ export default function Opportunities() {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [esferaFilter, setEsferaFilter] = useState<string[]>([]);
   const [modalidadeFilter, setModalidadeFilter] = useState<string[]>([]);
-  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<{
     uf: string[];
@@ -154,67 +150,6 @@ export default function Opportunities() {
   
   // Pagination state
   const [visibleCount, setVisibleCount] = useState(50);
-
-  const handleDownload = () => {
-    const dataToExport = processedConcursos.map(c => ({
-      Fonte: c.source,
-      Esfera: c.esfera,
-      Modalidade: c.modalidade,
-      Status: c.status,
-      Orgao: c.institution,
-      UF: c.location,
-      Banca: c.board,
-      Cargos: c.positions,
-      Vagas: c.vacancies,
-      Salario: c.salary,
-      Fim_Inscricoes: c.registration_end,
-      Periodo_Isencao: c.exemption_period,
-      Data_Prova: c.exam_date,
-      Etapas: c.etapas,
-      Disciplinas: c.subjects,
-      Status_Edital: getEditalStatus(c.registration_end, c.exam_date),
-      Link: c.link,
-      Link_Edital: c.Link_Edital,
-      Link_Inscricao: c.Link_Inscricao,
-      Duplicadas: c.duplicadas
-    }));
-
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `concursos_oportunidades_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleSync = async () => {
-    setSyncStatus('syncing');
-    try {
-      const success = await fetchGlobalConcursos();
-      if (success) {
-        // Reset filters and pagination if needed
-        setVisibleCount(50);
-        setSyncStatus('success');
-      } else {
-        setSyncStatus('error');
-      }
-    } catch (error) {
-      console.error("Erro na sincronização:", error);
-      setSyncStatus('error');
-    } finally {
-      setTimeout(() => setSyncStatus('idle'), 3000);
-    }
-  };
-
-  const handleClearData = () => {
-    if (window.confirm("Tem certeza que deseja limpar toda a base de dados de concursos? Esta ação não pode ser desfeita e removerá todos os concursos da sua lista.")) {
-      setConcursos([]);
-    }
-  };
 
   const ufs = [
     'AC', 'AL', 'AP', 'AM', 'BA', 'BR', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 
@@ -344,49 +279,12 @@ export default function Opportunities() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={handleSync}
-            disabled={syncStatus === 'syncing'}
-            className={clsx(
-              "flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 font-medium text-sm border",
-              syncStatus === 'success' ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" :
-              syncStatus === 'error' ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" :
-              "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
-            )}
-          >
-            {syncStatus === 'success' ? <Check size={18} /> :
-             syncStatus === 'error' ? <X size={18} /> :
-             <RefreshCw size={18} className={syncStatus === 'syncing' ? "animate-spin" : ""} />}
-            <span className="hidden sm:inline">
-              {syncStatus === 'syncing' ? 'Sincronizando...' : 
-               syncStatus === 'success' ? 'Sincronizado!' :
-               syncStatus === 'error' ? 'Erro ao sincronizar' :
-               'Sincronizar'}
-            </span>
-            <span className="sm:hidden">
-              {syncStatus === 'syncing' ? '...' : 
-               syncStatus === 'success' ? 'OK' :
-               syncStatus === 'error' ? 'Erro' :
-               'Sinc.'}
-            </span>
-          </button>
-          <button
-            onClick={handleClearData}
-            className="flex-1 md:flex-none flex items-center justify-center space-x-2 bg-rose-50 text-rose-700 border border-rose-200 px-4 py-2 rounded-lg hover:bg-rose-100 transition-colors font-medium text-sm"
-            title="Limpar todos os concursos"
-          >
-            <Trash2 size={18} />
-            <span className="hidden sm:inline">Limpar Dados</span>
-          </button>
-          <button
             onClick={() => setIsFilterDrawerOpen(true)}
             className="md:hidden flex items-center justify-center space-x-2 bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
           >
             <Filter size={18} />
             <span>Filtros</span>
           </button>
-          <div className="hidden md:block">
-            <CSVUpload />
-          </div>
         </div>
       </div>
 
