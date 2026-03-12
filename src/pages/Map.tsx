@@ -31,7 +31,7 @@ export default function MapView() {
   const { concursos } = useConcursoStore();
   const [selectedConcurso, setSelectedConcurso] = useState<Concurso | null>(null);
   
-  const mappedConcursos = concursos.filter(c => c.interest_status === 'interested' && c.latitude && c.longitude);
+  const mappedConcursos = concursos.filter(c => c.interest_status === 'interested' && c.latitude && c.longitude && c.institution !== 'Carregando...');
   const center: [number, number] = [-15.7801, -47.9292]; // Brasilia
 
   const handleMarkerClick = useCallback((c: Concurso) => {

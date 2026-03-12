@@ -16,10 +16,12 @@ export default function Dashboard() {
   const { concursos, scoringRules, userProfileScoring } = useConcursoStore();
 
   const scoredConcursos = useMemo(() => {
-    return concursos.map(c => ({
-      ...c,
-      score: calculateScore(c, scoringRules, userProfileScoring)
-    }));
+    return concursos
+      .filter(c => c.institution !== 'Carregando...')
+      .map(c => ({
+        ...c,
+        score: calculateScore(c, scoringRules, userProfileScoring)
+      }));
   }, [concursos, scoringRules, userProfileScoring]);
 
   const stats = useMemo(() => {

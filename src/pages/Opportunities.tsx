@@ -271,6 +271,7 @@ export default function Opportunities() {
   const processedConcursos = useMemo(() => {
     // 1. Filter
     let result = concursos.filter(c => {
+      if (c.institution === 'Carregando...') return false;
       const matchesText = 
         (c.institution || '').toLowerCase().includes((filter || '').toLowerCase()) ||
         (c.board || '').toLowerCase().includes((filter || '').toLowerCase()) ||

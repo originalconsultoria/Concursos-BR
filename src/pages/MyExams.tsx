@@ -13,8 +13,8 @@ export default function MyExams() {
   const [enriching, setEnriching] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'interested' | 'favorites' | 'analysis'>('interested');
 
-  const myExams = concursos.filter(c => c.interest_status === 'interested');
-  const favoriteExams = concursos.filter(c => c.is_favorite);
+  const validInterested = concursos.filter(c => c.interest_status === 'interested' && c.institution !== 'Carregando...');
+  const validFavorites = concursos.filter(c => c.is_favorite && c.institution !== 'Carregando...');
 
   const handleEdit = (concurso: Concurso) => {
     setEditingId(concurso.id);
@@ -87,13 +87,13 @@ export default function MyExams() {
       </div>
 
       {activeTab === 'interested' && (
-        myExams.length === 0 ? (
+        validInterested.length === 0 ? (
           <div className="bg-white p-12 rounded-xl border border-dashed border-slate-300 text-center">
             <p className="text-slate-500">Você ainda não marcou nenhum concurso como interessado.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {myExams.map((c, index) => (
+            {validInterested.map((c, index) => (
               <ConcursoCard 
                 key={`${c.id}-${index}`} 
                 c={c} 
@@ -116,13 +116,13 @@ export default function MyExams() {
       )}
 
       {activeTab === 'favorites' && (
-        favoriteExams.length === 0 ? (
+        validFavorites.length === 0 ? (
           <div className="bg-white p-12 rounded-xl border border-dashed border-slate-300 text-center">
             <p className="text-slate-500">Você ainda não favoritou nenhum concurso.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {favoriteExams.map((c, index) => (
+            {validFavorites.map((c, index) => (
               <CompactConcursoCard 
                 key={`${c.id}-${index}`} 
                 c={c} 
