@@ -8,7 +8,8 @@ let unsubscribeFromFirestore: (() => void) | null = null;
 
 const extractUserPreferences = (concursos: Concurso[]) => {
   return concursos
-    .filter(c => c.interest_status !== 'none' || c.is_favorite || c.is_enrolled || c.notes || c.exam_location)
+    // Adicione a checagem 'c && c.id' no filtro
+    .filter(c => c && c.id && (c.interest_status !== 'none' || c.is_favorite || c.is_enrolled || c.notes || c.exam_location))
     .map(c => ({
       id: c.id,
       interest_status: c.interest_status,
@@ -66,12 +67,15 @@ export const fetchGlobalConcursos = async () => {
   if (!isFirebaseConfigured) {
     throw new Error("Firebase não está configurado. Verifique as variáveis de ambiente.");
   }
+  const store = useConcursoStore.getState();
   try {
+    store.setSyncStatus('syncing');
     const concursosRef = collection(db, 'concursos_abertos');
     const snapshot = await getDocs(concursosRef);
     
     if (snapshot.empty) {
       console.log("No global concursos found in Firebase.");
+      store.setSyncStatus('synced');
       return true; 
     }
 
@@ -100,10 +104,8 @@ export const fetchGlobalConcursos = async () => {
       } as Concurso;
     });
 
-    const store = useConcursoStore.getState();
-    const currentConcursos = store.concursos;
-
     const globalIds = new Set(globalConcursos.map(c => c.id));
+    const currentConcursos = store.concursos;
     const localOnly = currentConcursos.filter(c => !globalIds.has(c.id));
 
     const mergedGlobal = globalConcursos.map(globalC => {
@@ -134,10 +136,12 @@ export const fetchGlobalConcursos = async () => {
     
     // Libera a gravação logo após o estado atualizar (Zustand é síncrono)
     isSyncingFromFirebase = false;
+    store.setSyncStatus('synced');
 
     return true;
   } catch (error: any) {
     console.error("Error fetching global concursos from Firebase:", error);
+    store.setSyncStatus('error');
     throw new Error(`Erro ao sincronizar com Firebase: ${error.message}`);
   }
 };
@@ -168,31 +172,40 @@ export const initFirebaseSync = () => {
       
       const docSnap = await getDoc(userDocRef);
       if (docSnap.exists()) {
+        store.setSyncStatus('syncing');
         const data = docSnap.data();
         isSyncingFromFirebase = true;
         if (data.scoringRules) store.setScoringRules(data.scoringRules);
         if (data.userProfileScoring) store.updateUserProfileScoring(data.userProfileScoring);
         if (data.concursos) store.setConcursos(mergePreferences(store.concursos, data.concursos));
         isSyncingFromFirebase = false;
+        store.setSyncStatus('synced');
       } else {
+        store.setSyncStatus('syncing');
         await setDoc(userDocRef, {
           scoringRules: store.scoringRules,
           userProfileScoring: store.userProfileScoring,
           concursos: extractUserPreferences(store.concursos),
           lastUpdated: new Date().toISOString(),
         });
+        store.setSyncStatus('synced');
       }
 
       unsubscribeFromFirestore = onSnapshot(userDocRef, (snapshot) => {
         if (isSyncingFromFirebase) return;
         const data = snapshot.data();
         if (data) {
+          store.setSyncStatus('syncing');
           isSyncingFromFirebase = true;
           if (data.scoringRules) store.setScoringRules(data.scoringRules);
           if (data.userProfileScoring) store.updateUserProfileScoring(data.userProfileScoring);
           if (data.concursos) store.setConcursos(mergePreferences(store.concursos, data.concursos));
           isSyncingFromFirebase = false;
+          store.setSyncStatus('synced');
         }
+      }, (error) => {
+        console.error("Firestore snapshot error:", error);
+        store.setSyncStatus('error');
       });
     } else {
       store.setUser(null);
@@ -211,13 +224,19 @@ export const initFirebaseSync = () => {
       state.userProfileScoring !== lastState.userProfileScoring ||
       state.concursos !== lastState.concursos
     ) {
+      state.setSyncStatus('syncing');
       const userDocRef = doc(db, 'usuarios', state.user.uid);
       setDoc(userDocRef, {
         scoringRules: state.scoringRules,
         userProfileScoring: state.userProfileScoring,
         concursos: extractUserPreferences(state.concursos),
         lastUpdated: new Date().toISOString(),
-      }, { merge: true }).catch(console.error);
+      }, { merge: true })
+      .then(() => state.setSyncStatus('synced'))
+      .catch((err) => {
+        console.error("Sync error:", err);
+        state.setSyncStatus('error');
+      });
     }
     lastState = state;
   });

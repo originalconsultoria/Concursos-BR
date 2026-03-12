@@ -83,6 +83,8 @@ interface ConcursoStore {
   updateNotificationSettings: (updates: Partial<NotificationSettings>) => void;
   setLastSeenExamIds: (ids: string[]) => void;
   deleteConcurso: (concurso: Concurso) => void;
+  syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
+  setSyncStatus: (status: 'idle' | 'syncing' | 'synced' | 'error') => void;
 }
 
 export const useConcursoStore = create<ConcursoStore>()(
@@ -106,8 +108,13 @@ export const useConcursoStore = create<ConcursoStore>()(
         deadlineThresholdDays: 3,
       },
       lastSeenExamIds: [],
+      syncStatus: 'idle',
       setUser: (user) => set({ user }),
-      setConcursos: (concursos) => set({ concursos }),
+      setSyncStatus: (status) => set({ syncStatus: status }),
+      setConcursos: (concursos) => set({ 
+        // Filtra silenciosamente qualquer item corrompido que venha do cache ou do banco
+        concursos: concursos.filter(c => c && c.id) 
+      }),
       updateConcurso: (id, updates) =>
         set((state) => ({
           concursos: state.concursos.map((c) =>

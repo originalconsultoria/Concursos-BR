@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map as MapIcon, Settings as SettingsIcon, Bookmark, User as UserIcon } from 'lucide-react';
+import { LayoutDashboard, Map as MapIcon, Settings as SettingsIcon, Bookmark, User as UserIcon, Cloud, CloudOff, RefreshCw, CheckCircle2 } from 'lucide-react';
 import clsx from 'clsx';
 import Opportunities from './pages/Opportunities';
 import MyExams from './pages/MyExams';
@@ -7,6 +7,7 @@ import MapView from './pages/Map';
 import Settings from './pages/Settings';
 import Auth from './pages/Auth';
 import { Logo } from './components/Logo';
+import { useConcursoStore } from './store';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Oportunidades' },
@@ -15,6 +16,42 @@ const links = [
   { to: '/settings', icon: SettingsIcon, label: 'Configurações' },
   { to: '/auth', icon: UserIcon, label: 'Perfil' },
 ];
+
+function SyncStatusIndicator({ className }: { className?: string }) {
+  const syncStatus = useConcursoStore((state) => state.syncStatus);
+  const user = useConcursoStore((state) => state.user);
+
+  if (!user) return null;
+
+  return (
+    <div className={clsx("flex items-center gap-2 px-4 py-2 text-[10px] font-bold uppercase tracking-wider", className)}>
+      {syncStatus === 'syncing' && (
+        <>
+          <RefreshCw size={14} className="text-indigo-400 animate-spin" />
+          <span className="text-slate-400">Sincronizando</span>
+        </>
+      )}
+      {syncStatus === 'synced' && (
+        <>
+          <CheckCircle2 size={14} className="text-emerald-400" />
+          <span className="text-slate-400">Sincronizado</span>
+        </>
+      )}
+      {syncStatus === 'error' && (
+        <>
+          <CloudOff size={14} className="text-rose-400" />
+          <span className="text-rose-400">Erro de Sinc.</span>
+        </>
+      )}
+      {syncStatus === 'idle' && (
+        <>
+          <Cloud size={14} className="text-slate-500" />
+          <span className="text-slate-400">Conectado</span>
+        </>
+      )}
+    </div>
+  );
+}
 
 function Sidebar() {
   const location = useLocation();
@@ -44,6 +81,9 @@ function Sidebar() {
           );
         })}
       </nav>
+      <div className="p-4 border-t border-slate-800">
+        <SyncStatusIndicator />
+      </div>
     </div>
   );
 }
@@ -84,6 +124,7 @@ function MobileHeader() {
         <Logo />
         <h1 className="text-lg font-extrabold tracking-tight text-slate-900">Concursos BR</h1>
       </div>
+      <SyncStatusIndicator className="px-0 py-0" />
     </div>
   );
 }
