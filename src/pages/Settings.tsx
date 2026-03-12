@@ -17,18 +17,6 @@ export default function Settings() {
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const [newUf, setNewUf] = useState('');
-  const [newUfPoints, setNewUfPoints] = useState(10);
-  
-  const [newEsfera, setNewEsfera] = useState('');
-  const [newEsferaPoints, setNewEsferaPoints] = useState(10);
-
-  const [newModalidade, setNewModalidade] = useState('');
-  const [newModalidadePoints, setNewModalidadePoints] = useState(10);
-
-  const [newEscolaridade, setNewEscolaridade] = useState('');
-  const [newEscolaridadePoints, setNewEscolaridadePoints] = useState(10);
-
   const handleRecalculate = () => {
     setIsRecalculating(true);
     // Simulate a brief calculation period for UX
@@ -50,61 +38,44 @@ export default function Settings() {
     addScoringRule(newRule);
   };
 
-  const handleAddUf = () => {
-    if (!newUf) return;
-    const uf = newUf.toUpperCase();
-    updateUserProfileScoring({
-      ufs_desejadas: { ...(userProfileScoring.ufs_desejadas || {}), [uf]: newUfPoints }
-    });
-    setNewUf('');
+  const toggleUf = (uf: string) => {
+    const currentUfs = { ...(userProfileScoring.ufs_desejadas || {}) };
+    if (currentUfs[uf]) {
+      delete currentUfs[uf];
+    } else {
+      currentUfs[uf] = 10;
+    }
+    updateUserProfileScoring({ ufs_desejadas: currentUfs });
   };
 
-  const handleRemoveUf = (uf: string) => {
-    const newUfs = { ...(userProfileScoring.ufs_desejadas || {}) };
-    delete newUfs[uf];
-    updateUserProfileScoring({ ufs_desejadas: newUfs });
+  const toggleEsfera = (esfera: string) => {
+    const currentEsferas = { ...(userProfileScoring.esferas_preferidas || {}) };
+    if (currentEsferas[esfera]) {
+      delete currentEsferas[esfera];
+    } else {
+      currentEsferas[esfera] = 15;
+    }
+    updateUserProfileScoring({ esferas_preferidas: currentEsferas });
   };
 
-  const handleAddEsfera = () => {
-    if (!newEsfera) return;
-    updateUserProfileScoring({
-      esferas_preferidas: { ...(userProfileScoring.esferas_preferidas || {}), [newEsfera]: newEsferaPoints }
-    });
-    setNewEsfera('');
+  const toggleModalidade = (modalidade: string) => {
+    const currentModalidades = { ...(userProfileScoring.modalidades_preferidas || {}) };
+    if (currentModalidades[modalidade]) {
+      delete currentModalidades[modalidade];
+    } else {
+      currentModalidades[modalidade] = 10;
+    }
+    updateUserProfileScoring({ modalidades_preferidas: currentModalidades });
   };
 
-  const handleRemoveEsfera = (esfera: string) => {
-    const newEsferas = { ...(userProfileScoring.esferas_preferidas || {}) };
-    delete newEsferas[esfera];
-    updateUserProfileScoring({ esferas_preferidas: newEsferas });
-  };
-
-  const handleAddModalidade = () => {
-    if (!newModalidade) return;
-    updateUserProfileScoring({
-      modalidades_preferidas: { ...userProfileScoring.modalidades_preferidas, [newModalidade]: newModalidadePoints }
-    });
-    setNewModalidade('');
-  };
-
-  const handleRemoveModalidade = (modalidade: string) => {
-    const newModalidades = { ...userProfileScoring.modalidades_preferidas };
-    delete newModalidades[modalidade];
-    updateUserProfileScoring({ modalidades_preferidas: newModalidades });
-  };
-
-  const handleAddEscolaridade = () => {
-    if (!newEscolaridade) return;
-    updateUserProfileScoring({
-      escolaridades_preferidas: { ...userProfileScoring.escolaridades_preferidas, [newEscolaridade]: newEscolaridadePoints }
-    });
-    setNewEscolaridade('');
-  };
-
-  const handleRemoveEscolaridade = (escolaridade: string) => {
-    const newEscolaridades = { ...userProfileScoring.escolaridades_preferidas };
-    delete newEscolaridades[escolaridade];
-    updateUserProfileScoring({ escolaridades_preferidas: newEscolaridades });
+  const toggleEscolaridade = (escolaridade: string) => {
+    const currentEscolaridades = { ...(userProfileScoring.escolaridades_preferidas || {}) };
+    if (currentEscolaridades[escolaridade]) {
+      delete currentEscolaridades[escolaridade];
+    } else {
+      currentEscolaridades[escolaridade] = 20;
+    }
+    updateUserProfileScoring({ escolaridades_preferidas: currentEscolaridades });
   };
 
   return (
@@ -166,44 +137,24 @@ export default function Settings() {
                   <MapPin size={16} className="text-slate-400 shrink-0" />
                   <span>Estados (UFs) Desejados</span>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <select 
-                      value={newUf}
-                      onChange={e => setNewUf(e.target.value)}
-                      className="w-full sm:flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50"
-                    >
-                      <option value="">UF</option>
-                      {BRAZILIAN_UFS.map(uf => (
-                        <option key={uf} value={uf}>{uf}</option>
-                      ))}
-                    </select>
-                    <div className="flex gap-2">
-                      <input 
-                        type="number" 
-                        placeholder="Pts"
-                        value={newUfPoints}
-                        onChange={e => setNewUfPoints(Number(e.target.value))}
-                        className="w-20 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50"
-                      />
-                      <button 
-                        onClick={handleAddUf}
-                        className="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-100"
+                <div className="flex flex-wrap gap-2">
+                  {BRAZILIAN_UFS.map(uf => {
+                    const isActive = !!(userProfileScoring.ufs_desejadas || {})[uf];
+                    return (
+                      <button
+                        key={uf}
+                        onClick={() => toggleUf(uf)}
+                        className={clsx(
+                          "px-3 py-1.5 rounded-full text-sm font-bold border transition-all",
+                          isActive 
+                            ? "bg-indigo-100 text-indigo-700 border-indigo-200 shadow-sm" 
+                            : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
+                        )}
                       >
-                        <Plus size={20} />
+                        {uf}
                       </button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(userProfileScoring.ufs_desejadas || {}).map(([uf, pts]) => (
-                      <div key={uf} className="flex items-center space-x-2 bg-indigo-50 text-indigo-700 pl-3 pr-1 py-1 rounded-full text-xs font-bold border border-indigo-100">
-                        <span>{uf}: {pts} pts</span>
-                        <button onClick={() => handleRemoveUf(uf)} className="text-indigo-400 hover:text-rose-500 p-1.5 rounded-full hover:bg-indigo-100 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -213,47 +164,24 @@ export default function Settings() {
                   <Globe size={16} className="text-slate-400 shrink-0" />
                   <span>Esferas Preferidas</span>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <select 
-                      value={newEsfera}
-                      onChange={e => setNewEsfera(e.target.value)}
-                      className="w-full sm:flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50"
-                    >
-                      <option value="">Selecionar Categoria</option>
-                      {Object.keys(ESFERA_PATTERNS).map(category => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                      <option value="Federal">Federal (Simples)</option>
-                      <option value="Estadual">Estadual (Simples)</option>
-                      <option value="Municipal">Municipal (Simples)</option>
-                    </select>
-                    <div className="flex gap-2">
-                      <input 
-                        type="number" 
-                        placeholder="Pts"
-                        value={newEsferaPoints}
-                        onChange={e => setNewEsferaPoints(Number(e.target.value))}
-                        className="w-20 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50"
-                      />
-                      <button 
-                        onClick={handleAddEsfera}
-                        className="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-100"
+                <div className="flex flex-wrap gap-2">
+                  {[...Object.keys(ESFERA_PATTERNS), 'Federal', 'Estadual', 'Municipal'].map(esfera => {
+                    const isActive = !!(userProfileScoring.esferas_preferidas || {})[esfera];
+                    return (
+                      <button
+                        key={esfera}
+                        onClick={() => toggleEsfera(esfera)}
+                        className={clsx(
+                          "px-3 py-1.5 rounded-full text-sm font-bold border transition-all",
+                          isActive 
+                            ? "bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm" 
+                            : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
+                        )}
                       >
-                        <Plus size={20} />
+                        {esfera}
                       </button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(userProfileScoring.esferas_preferidas || {}).map(([esfera, pts]) => (
-                      <div key={esfera} className="flex items-center space-x-2 bg-emerald-50 text-emerald-700 pl-3 pr-1 py-1 rounded-full text-xs font-bold border border-emerald-100">
-                        <span className="max-w-[200px] truncate" title={esfera}>{esfera}: {pts} pts</span>
-                        <button onClick={() => handleRemoveEsfera(esfera)} className="text-emerald-400 hover:text-rose-500 flex-shrink-0 p-1.5 rounded-full hover:bg-emerald-100 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -263,44 +191,24 @@ export default function Settings() {
                   <Layout size={16} className="text-slate-400 shrink-0" />
                   <span>Modalidades Preferidas</span>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <select 
-                      value={newModalidade}
-                      onChange={e => setNewModalidade(e.target.value)}
-                      className="w-full sm:flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50"
-                    >
-                      <option value="">Selecionar Modalidade</option>
-                      {Object.keys(MODALIDADE_PATTERNS).map(category => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
-                    <div className="flex gap-2">
-                      <input 
-                        type="number" 
-                        placeholder="Pts"
-                        value={newModalidadePoints}
-                        onChange={e => setNewModalidadePoints(Number(e.target.value))}
-                        className="w-20 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50"
-                      />
-                      <button 
-                        onClick={handleAddModalidade}
-                        className="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-100"
+                <div className="flex flex-wrap gap-2">
+                  {Object.keys(MODALIDADE_PATTERNS).map(modalidade => {
+                    const isActive = !!(userProfileScoring.modalidades_preferidas || {})[modalidade];
+                    return (
+                      <button
+                        key={modalidade}
+                        onClick={() => toggleModalidade(modalidade)}
+                        className={clsx(
+                          "px-3 py-1.5 rounded-full text-sm font-bold border transition-all",
+                          isActive 
+                            ? "bg-amber-100 text-amber-700 border-amber-200 shadow-sm" 
+                            : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
+                        )}
                       >
-                        <Plus size={20} />
+                        {modalidade}
                       </button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(userProfileScoring.modalidades_preferidas || {}).map(([modalidade, pts]) => (
-                      <div key={modalidade} className="flex items-center space-x-2 bg-amber-50 text-amber-700 pl-3 pr-1 py-1 rounded-full text-xs font-bold border border-amber-100">
-                        <span className="max-w-[200px] truncate" title={modalidade}>{modalidade}: {pts} pts</span>
-                        <button onClick={() => handleRemoveModalidade(modalidade)} className="text-amber-400 hover:text-rose-500 flex-shrink-0 p-1.5 rounded-full hover:bg-amber-100 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -310,44 +218,24 @@ export default function Settings() {
                   <GraduationCap size={16} className="text-slate-400 shrink-0" />
                   <span>Nível de Escolaridade Alvo</span>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <select 
-                      value={newEscolaridade}
-                      onChange={e => setNewEscolaridade(e.target.value)}
-                      className="w-full sm:flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50"
-                    >
-                      <option value="">Selecionar Escolaridade</option>
-                      {ESCOLARIDADE_OPTIONS.map(option => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
-                    </select>
-                    <div className="flex gap-2">
-                      <input 
-                        type="number" 
-                        placeholder="Pts"
-                        value={newEscolaridadePoints}
-                        onChange={e => setNewEscolaridadePoints(Number(e.target.value))}
-                        className="w-20 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50"
-                      />
-                      <button 
-                        onClick={handleAddEscolaridade}
-                        className="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-100"
+                <div className="flex flex-wrap gap-2">
+                  {ESCOLARIDADE_OPTIONS.map(escolaridade => {
+                    const isActive = !!(userProfileScoring.escolaridades_preferidas || {})[escolaridade];
+                    return (
+                      <button
+                        key={escolaridade}
+                        onClick={() => toggleEscolaridade(escolaridade)}
+                        className={clsx(
+                          "px-3 py-1.5 rounded-full text-sm font-bold border transition-all",
+                          isActive 
+                            ? "bg-blue-100 text-blue-700 border-blue-200 shadow-sm" 
+                            : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
+                        )}
                       >
-                        <Plus size={20} />
+                        {escolaridade}
                       </button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(userProfileScoring.escolaridades_preferidas || {}).map(([escolaridade, pts]) => (
-                      <div key={escolaridade} className="flex items-center space-x-2 bg-blue-50 text-blue-700 pl-3 pr-1 py-1 rounded-full text-xs font-bold border border-blue-100">
-                        <span className="max-w-[200px] truncate" title={escolaridade}>{escolaridade}: {pts} pts</span>
-                        <button onClick={() => handleRemoveEscolaridade(escolaridade)} className="text-blue-400 hover:text-rose-500 flex-shrink-0 p-1.5 rounded-full hover:bg-blue-100 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
