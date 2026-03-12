@@ -218,17 +218,29 @@ export const initFirebaseSync = () => {
   let lastRules = initialState.scoringRules;
 
   useConcursoStore.subscribe((state) => {
-    if (isSyncingFromFirebase || !state.user) {
+    // 1. Se não houver usuário logado, não faz nada
+    if (!state.user) {
       return;
     }
 
-    const concursosChanged = state.concursos !== lastConcursos;
-
-    if (!concursosChanged) {
+    // 2. SE A MUDANÇA VEIO DO FIREBASE: Apenas atualiza o tracker local e aborta o save
+    if (isSyncingFromFirebase) {
+      lastConcursos = state.concursos;
       return;
     }
 
-    // Update trackers
+    // 3. Para evitar falsos positivos de alteração de memória do React/Zustand, 
+    // comparamos apenas o que realmente interessa: os dados extraídos.
+    const currentPreferencesStr = JSON.stringify(extractUserPreferences(state.concursos));
+    const lastPreferencesStr = JSON.stringify(extractUserPreferences(lastConcursos));
+
+    // 4. Se o conteúdo real não mudou, atualiza a referência e sai
+    if (currentPreferencesStr === lastPreferencesStr) {
+      lastConcursos = state.concursos;
+      return;
+    }
+
+    // 5. Agora sim, sabemos que o usuário tomou alguma ação de mudança real
     lastConcursos = state.concursos;
 
     state.setSyncStatus('syncing');
@@ -240,7 +252,9 @@ export const initFirebaseSync = () => {
     };
 
     setDoc(userDocRef, updateData, { merge: true })
-      .then(() => useConcursoStore.getState().setSyncStatus('synced'))
+      .then(() => {
+        useConcursoStore.getState().setSyncStatus('synced');
+      })
       .catch((err) => {
         console.error("Sync error:", err);
         useConcursoStore.getState().setSyncStatus('error');

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, AlertCircle, User, MapPin, Globe, GraduationCap, Layout, Bell, Mail, Smartphone, Trophy, RefreshCw, CheckCircle2, LogOut, Save } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, User, MapPin, Globe, GraduationCap, Layout, Bell, Mail, Smartphone, Trophy, RefreshCw, CheckCircle2, LogOut, Save, Sliders } from 'lucide-react';
 import { useConcursoStore, ScoringRule, NotificationSettings } from '../store';
 import { ESFERA_PATTERNS, MODALIDADE_PATTERNS, BRAZILIAN_UFS, ESCOLARIDADE_OPTIONS } from '../constants';
 import clsx from 'clsx';
@@ -7,7 +7,7 @@ import { auth } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
 import { saveUserSettings } from '../services/firebaseSync';
 
-type TabType = 'perfil' | 'pontuacao' | 'notificacoes';
+type TabType = 'preferencias' | 'pontuacao' | 'notificacoes' | 'conta';
 
 export default function Settings() {
   const { 
@@ -28,11 +28,11 @@ export default function Settings() {
     if (syncStatus === 'synced') {
       setInitialSettings({ scoringRules, userProfileScoring, notificationSettings });
     }
-  }, [syncStatus, scoringRules, userProfileScoring, notificationSettings]);
+  }, [syncStatus]);
 
   const hasChanges = JSON.stringify({ scoringRules, userProfileScoring, notificationSettings }) !== JSON.stringify(initialSettings);
 
-  const [activeTab, setActiveTab] = useState<TabType>('perfil');
+  const [activeTab, setActiveTab] = useState<TabType>('preferencias');
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -41,7 +41,6 @@ export default function Settings() {
 
   const handleRecalculate = () => {
     setIsRecalculating(true);
-    // Simulate a brief calculation period for UX
     setTimeout(() => {
       setIsRecalculating(false);
       setShowSuccess(true);
@@ -135,81 +134,39 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 max-w-4xl -mx-4 sm:mx-auto sm:px-0 pb-12">
-      <div className="py-4 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="px-4 sm:px-0">
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Configurações</h2>
-          <p className="text-slate-500 text-sm sm:text-base font-medium">Personalize suas preferências e regras de pontuação</p>
-        </div>
-        <div className="flex flex-col gap-2 items-end w-full sm:w-auto px-4 sm:px-0">
-          <button
-            onClick={handleSaveSettings}
-            disabled={isSaving || !hasChanges}
-            className={clsx(
-              "w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed",
-              showSaveSuccess 
-                ? "bg-emerald-500 text-white shadow-emerald-200" 
-                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100"
-            )}
-          >
-            {isSaving ? (
-              <RefreshCw size={20} className="animate-spin" />
-            ) : showSaveSuccess ? (
-              <CheckCircle2 size={20} />
-            ) : (
-              <Save size={20} />
-            )}
-            <span>{isSaving ? 'Salvando...' : showSaveSuccess ? 'Salvo com Sucesso' : 'Salvar Configurações'}</span>
-          </button>
-          {saveError && (
-            <div className="flex items-center space-x-2 text-rose-500 text-xs font-bold animate-in fade-in slide-in-from-top-1">
-              <AlertCircle size={14} />
-              <span>{saveError}</span>
-            </div>
-          )}
-        </div>
+    <div className="space-y-6 sm:space-y-8 max-w-4xl -mx-4 sm:mx-auto sm:px-0 pb-32">
+      <div className="px-4 sm:px-0 pt-8">
+        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Configurações</h2>
+        <p className="text-slate-500 text-sm mt-1">Gerencie suas preferências e regras de pontuação.</p>
       </div>
 
       {/* Tab Navigation */}
-      <div className="mx-4 sm:mx-0 bg-slate-100/70 p-1.5 rounded-2xl grid grid-cols-3 gap-1">
-        <button
-          onClick={() => setActiveTab('perfil')}
-          className={clsx(
-            "flex-1 rounded-xl font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-1 sm:px-4 text-[11px] sm:text-sm",
-            activeTab === 'perfil' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-          )}
-        >
-          <User size={18} />
-          <span>Perfil</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('pontuacao')}
-          className={clsx(
-            "flex-1 rounded-xl font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-1 sm:px-4 text-[11px] sm:text-sm",
-            activeTab === 'pontuacao' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-          )}
-        >
-          <Trophy size={18} />
-          <span>Pontuação</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('notificacoes')}
-          className={clsx(
-            "flex-1 rounded-xl font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-1 sm:px-4 text-[11px] sm:text-sm",
-            activeTab === 'notificacoes' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-          )}
-        >
-          <Bell size={18} />
-          <span>Notificações</span>
-        </button>
+      <div className="mx-4 sm:mx-0 bg-slate-100/70 p-1.5 rounded-2xl grid grid-cols-4 gap-1">
+        {[
+          { id: 'preferencias', label: 'Preferências', icon: Sliders },
+          { id: 'pontuacao', label: 'Pontuação', icon: Trophy },
+          { id: 'notificacoes', label: 'Notificações', icon: Bell },
+          { id: 'conta', label: 'Conta', icon: User },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as TabType)}
+            className={clsx(
+              "flex-1 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 py-2.5 px-1 text-[10px] sm:text-xs",
+              activeTab === tab.id ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+            )}
+          >
+            <tab.icon size={18} />
+            <span>{tab.label}</span>
+          </button>
+        ))}
       </div>
 
       {/* Tab Content */}
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {activeTab === 'perfil' && (
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 sm:px-0">
+        {activeTab === 'conta' && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            {/* Profile Header */}
-            <div className="p-8 border-b border-slate-100 flex flex-col items-center justify-center space-y-4 bg-slate-50/50">
+            <div className="p-8 flex flex-col items-center justify-center space-y-4 bg-slate-50/50">
               <div className="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-md">
                 {user?.photoURL ? (
                   <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -222,247 +179,242 @@ export default function Settings() {
                 <p className="text-sm text-slate-500 font-medium">{user?.email}</p>
               </div>
             </div>
-            
-            <div className="p-6 space-y-8">
-              {/* UFs Desejadas */}
-              <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
-                <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm uppercase tracking-wider">
-                  <MapPin size={18} className="text-indigo-500 shrink-0" />
-                  <span>Estados (UFs) Desejados</span>
-                </div>
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-                  {BRAZILIAN_UFS.map(uf => {
-                    const isActive = !!(userProfileScoring.ufs_desejadas || {})[uf];
-                    return (
-                      <button
-                        key={uf}
-                        onClick={() => toggleUf(uf)}
-                        className={clsx(
-                          "w-full flex items-center justify-center text-center px-1 py-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all active:scale-95",
-                          isActive 
-                            ? "bg-indigo-100 text-indigo-700 border-indigo-200 shadow-sm" 
-                            : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-                        )}
-                      >
-                        {uf}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+            <div className="p-6">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center space-x-2 bg-rose-50 text-rose-600 border border-rose-200 px-4 py-3.5 rounded-xl font-bold hover:bg-rose-100 transition-colors active:scale-95"
+              >
+                <LogOut size={20} />
+                <span>Sair da Conta</span>
+              </button>
+            </div>
+          </div>
+        )}
 
-              {/* Esferas Preferidas */}
-              <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
-                <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm uppercase tracking-wider">
-                  <Globe size={18} className="text-emerald-500 shrink-0" />
-                  <span>Esferas Preferidas</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {[...Object.keys(ESFERA_PATTERNS), 'Federal', 'Estadual', 'Municipal'].map(esfera => {
-                    const isActive = !!(userProfileScoring.esferas_preferidas || {})[esfera];
-                    return (
-                      <button
-                        key={esfera}
-                        onClick={() => toggleEsfera(esfera)}
-                        className={clsx(
-                          "w-full flex items-center justify-center text-center px-2 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold border transition-all active:scale-95",
-                          isActive 
-                            ? "bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm" 
-                            : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-                        )}
-                      >
-                        {esfera}
-                      </button>
-                    );
-                  })}
-                </div>
+        {activeTab === 'preferencias' && (
+          <div className="space-y-8">
+            {/* UFs, Esferas, Modalidades, Escolaridade */}
+            <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
+              <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm uppercase tracking-wider">
+                <MapPin size={18} className="text-indigo-500 shrink-0" />
+                <span>Estados (UFs) Desejados</span>
               </div>
-
-              {/* Modalidades Preferidas */}
-              <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
-                <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm uppercase tracking-wider">
-                  <Layout size={18} className="text-amber-500 shrink-0" />
-                  <span>Modalidades Preferidas</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {Object.keys(MODALIDADE_PATTERNS).map(modalidade => {
-                    const isActive = !!(userProfileScoring.modalidades_preferidas || {})[modalidade];
-                    return (
-                      <button
-                        key={modalidade}
-                        onClick={() => toggleModalidade(modalidade)}
-                        className={clsx(
-                          "w-full flex items-center justify-center text-center px-2 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold border transition-all active:scale-95",
-                          isActive 
-                            ? "bg-amber-100 text-amber-700 border-amber-200 shadow-sm" 
-                            : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-                        )}
-                      >
-                        {modalidade}
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                {BRAZILIAN_UFS.map(uf => {
+                  const isActive = !!(userProfileScoring.ufs_desejadas || {})[uf];
+                  return (
+                    <button
+                      key={uf}
+                      onClick={() => toggleUf(uf)}
+                      className={clsx(
+                        "w-full flex items-center justify-center text-center px-1 py-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all active:scale-95",
+                        isActive 
+                          ? "bg-indigo-100 text-indigo-700 border-indigo-200 shadow-sm" 
+                          : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                      )}
+                    >
+                      {uf}
+                    </button>
+                  );
+                })}
               </div>
+            </div>
 
-              {/* Escolaridade Alvo */}
-              <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
-                <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm uppercase tracking-wider">
-                  <GraduationCap size={18} className="text-blue-500 shrink-0" />
-                  <span>Nível de Escolaridade Alvo</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {ESCOLARIDADE_OPTIONS.map(escolaridade => {
-                    const isActive = !!(userProfileScoring.escolaridades_preferidas || {})[escolaridade];
-                    return (
-                      <button
-                        key={escolaridade}
-                        onClick={() => toggleEscolaridade(escolaridade)}
-                        className={clsx(
-                          "w-full flex items-center justify-center text-center px-2 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold border transition-all active:scale-95",
-                          isActive 
-                            ? "bg-blue-100 text-blue-700 border-blue-200 shadow-sm" 
-                            : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-                        )}
-                      >
-                        {escolaridade}
-                      </button>
-                    );
-                  })}
-                </div>
+            <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
+              <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm uppercase tracking-wider">
+                <Globe size={18} className="text-emerald-500 shrink-0" />
+                <span>Esferas Preferidas</span>
               </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {[...Object.keys(ESFERA_PATTERNS), 'Federal', 'Estadual', 'Municipal'].map(esfera => {
+                  const isActive = !!(userProfileScoring.esferas_preferidas || {})[esfera];
+                  return (
+                    <button
+                      key={esfera}
+                      onClick={() => toggleEsfera(esfera)}
+                      className={clsx(
+                        "w-full flex items-center justify-center text-center px-2 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold border transition-all active:scale-95",
+                        isActive 
+                          ? "bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm" 
+                          : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                      )}
+                    >
+                      {esfera}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-              {/* Logout Button */}
-              <div className="pt-4">
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center space-x-2 bg-rose-50 text-rose-600 border border-rose-200 px-4 py-3.5 rounded-xl font-bold hover:bg-rose-100 transition-colors active:scale-95"
-                >
-                  <LogOut size={20} />
-                  <span>Sair da Conta</span>
-                </button>
+            <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
+              <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm uppercase tracking-wider">
+                <Layout size={18} className="text-amber-500 shrink-0" />
+                <span>Modalidades Preferidas</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {Object.keys(MODALIDADE_PATTERNS).map(modalidade => {
+                  const isActive = !!(userProfileScoring.modalidades_preferidas || {})[modalidade];
+                  return (
+                    <button
+                      key={modalidade}
+                      onClick={() => toggleModalidade(modalidade)}
+                      className={clsx(
+                        "w-full flex items-center justify-center text-center px-2 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold border transition-all active:scale-95",
+                        isActive 
+                          ? "bg-amber-100 text-amber-700 border-amber-200 shadow-sm" 
+                          : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                      )}
+                    >
+                      {modalidade}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 space-y-4">
+              <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm uppercase tracking-wider">
+                <GraduationCap size={18} className="text-blue-500 shrink-0" />
+                <span>Nível de Escolaridade Alvo</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {ESCOLARIDADE_OPTIONS.map(escolaridade => {
+                  const isActive = !!(userProfileScoring.escolaridades_preferidas || {})[escolaridade];
+                  return (
+                    <button
+                      key={escolaridade}
+                      onClick={() => toggleEscolaridade(escolaridade)}
+                      className={clsx(
+                        "w-full flex items-center justify-center text-center px-2 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold border transition-all active:scale-95",
+                        isActive 
+                          ? "bg-blue-100 text-blue-700 border-blue-200 shadow-sm" 
+                          : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                      )}
+                    >
+                      {escolaridade}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
         )}
 
         {activeTab === 'pontuacao' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-              <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="flex items-center space-x-2">
-                  <Trophy className="text-indigo-600 shrink-0" size={20} />
-                  <h3 className="text-lg font-bold text-slate-800">Regras de Pontuação Dinâmicas</h3>
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <button
-                    onClick={handleRecalculate}
-                    disabled={isRecalculating}
-                    className={clsx(
-                      "flex-1 sm:flex-none flex items-center justify-center space-x-2 px-4 py-2 rounded-xl font-bold transition-all active:scale-95 border",
-                      showSuccess 
-                        ? "bg-emerald-50 text-emerald-600 border-emerald-200" 
-                        : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
-                    )}
-                  >
-                    {isRecalculating ? (
-                      <RefreshCw size={18} className="animate-spin" />
-                    ) : showSuccess ? (
-                      <CheckCircle2 size={18} />
-                    ) : (
-                      <RefreshCw size={18} />
-                    )}
-                    <span>{isRecalculating ? 'Calculando...' : showSuccess ? 'Concluído' : 'Recalcular Scores'}</span>
-                  </button>
-                  <button
-                    onClick={handleAddRule}
-                    className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 font-bold active:scale-95"
-                  >
-                    <Plus size={18} />
-                    <span>Nova Regra</span>
-                  </button>
-                </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <Trophy className="text-indigo-600 shrink-0" size={20} />
+                <h3 className="text-lg font-bold text-slate-800">Regras de Pontuação Dinâmicas</h3>
               </div>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <button
+                  onClick={handleRecalculate}
+                  disabled={isRecalculating}
+                  className={clsx(
+                    "flex-1 sm:flex-none flex items-center justify-center space-x-2 px-4 py-2 rounded-xl font-bold transition-all active:scale-95 border",
+                    showSuccess 
+                      ? "bg-emerald-50 text-emerald-600 border-emerald-200" 
+                      : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
+                  )}
+                >
+                  {isRecalculating ? (
+                    <RefreshCw size={18} className="animate-spin" />
+                  ) : showSuccess ? (
+                    <CheckCircle2 size={18} />
+                  ) : (
+                    <RefreshCw size={18} />
+                  )}
+                  <span>{isRecalculating ? 'Calculando...' : showSuccess ? 'Concluído' : 'Recalcular Scores'}</span>
+                </button>
+                <button
+                  onClick={handleAddRule}
+                  className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 font-bold active:scale-95"
+                >
+                  <Plus size={18} />
+                  <span>Nova Regra</span>
+                </button>
+              </div>
+            </div>
 
-              <div className="p-6 space-y-4">
-                {scoringRules.length === 0 ? (
-                  <div className="text-center py-12 text-slate-500 flex flex-col items-center">
-                    <AlertCircle size={48} className="text-slate-200 mb-3" />
-                    <p className="font-bold">Nenhuma regra configurada.</p>
-                    <p className="text-xs mt-1">Adicione regras para priorizar concursos automaticamente.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {scoringRules.map((rule) => (
-                      <div key={rule.id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:flex-1">
-                          <select
-                            value={rule.field}
-                            onChange={(e) => updateScoringRule(rule.id, { field: e.target.value as any })}
-                            className="w-full sm:flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                          >
-                            <option value="salary">Salário</option>
-                            <option value="vacancies">Vagas</option>
-                            <option value="board">Banca</option>
-                            <option value="positions">Cargos</option>
-                            <option value="institution">Órgão</option>
-                            <option value="location">UF / Local</option>
-                          </select>
-
-                          <select
-                            value={rule.condition}
-                            onChange={(e) => updateScoringRule(rule.id, { condition: e.target.value as any })}
-                            className="w-full sm:flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                          >
-                            <option value="contains">Contém</option>
-                            <option value="equals">Igual a</option>
-                            <option value="greater_than">Maior que</option>
-                            <option value="less_than">Menor que</option>
-                          </select>
-                        </div>
-
-                        <input
-                          type="text"
-                          value={rule.value}
-                          onChange={(e) => updateScoringRule(rule.id, { value: e.target.value })}
-                          placeholder="Valor..."
+            <div className="p-6 space-y-4">
+              {scoringRules.length === 0 ? (
+                <div className="text-center py-12 text-slate-500 flex flex-col items-center">
+                  <AlertCircle size={48} className="text-slate-200 mb-3" />
+                  <p className="font-bold">Nenhuma regra configurada.</p>
+                  <p className="text-xs mt-1">Adicione regras para priorizar concursos automaticamente.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {scoringRules.map((rule) => (
+                    <div key={rule.id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:flex-1">
+                        <select
+                          value={rule.field}
+                          onChange={(e) => updateScoringRule(rule.id, { field: e.target.value as any })}
                           className="w-full sm:flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                        />
+                        >
+                          <option value="salary">Salário</option>
+                          <option value="vacancies">Vagas</option>
+                          <option value="board">Banca</option>
+                          <option value="positions">Cargos</option>
+                          <option value="institution">Órgão</option>
+                          <option value="location">UF / Local</option>
+                        </select>
 
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2">
-                            <span className="text-[10px] font-black text-slate-400 uppercase mr-2">Pts</span>
-                            <input
-                              type="number"
-                              value={rule.points}
-                              onChange={(e) => updateScoringRule(rule.id, { points: Number(e.target.value) })}
-                              className="w-12 text-sm font-bold text-center focus:outline-none"
-                            />
-                          </div>
-                          <button
-                            onClick={() => removeScoringRule(rule.id)}
-                            className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
+                        <select
+                          value={rule.condition}
+                          onChange={(e) => updateScoringRule(rule.id, { condition: e.target.value as any })}
+                          className="w-full sm:flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        >
+                          <option value="contains">Contém</option>
+                          <option value="equals">Igual a</option>
+                          <option value="greater_than">Maior que</option>
+                          <option value="less_than">Menor que</option>
+                        </select>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              <div className="bg-slate-50 p-6 border-t border-slate-100">
-                <h4 className="font-bold text-slate-800 text-sm mb-3">Como funciona a pontuação?</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-500 leading-relaxed">
-                  <div className="flex gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1 shrink-0" />
-                    <p>Para <strong>Salário</strong> e <strong>Vagas</strong>, o sistema extrai números automaticamente (ex: "R$ 5.000" vira 5000).</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1 shrink-0" />
-                    <p>Use <strong>Contém</strong> para buscar palavras-chave em Cargos, Bancas ou Órgãos.</p>
-                  </div>
+
+                      <input
+                        type="text"
+                        value={rule.value}
+                        onChange={(e) => updateScoringRule(rule.id, { value: e.target.value })}
+                        placeholder="Valor..."
+                        className="w-full sm:flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                      />
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2">
+                          <span className="text-[10px] font-black text-slate-400 uppercase mr-2">Pts</span>
+                          <input
+                            type="number"
+                            value={rule.points}
+                            onChange={(e) => updateScoringRule(rule.id, { points: Number(e.target.value) })}
+                            className="w-12 text-sm font-bold text-center focus:outline-none"
+                          />
+                        </div>
+                        <button
+                          onClick={() => removeScoringRule(rule.id)}
+                          className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="bg-slate-50 p-6 border-t border-slate-100">
+              <h4 className="font-bold text-slate-800 text-sm mb-3">Como funciona a pontuação?</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-500 leading-relaxed">
+                <div className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1 shrink-0" />
+                  <p>Para <strong>Salário</strong> e <strong>Vagas</strong>, o sistema extrai números automaticamente (ex: "R$ 5.000" vira 5000).</p>
+                </div>
+                <div className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1 shrink-0" />
+                  <p>Use <strong>Contém</strong> para buscar palavras-chave em Cargos, Bancas ou Órgãos.</p>
                 </div>
               </div>
             </div>
@@ -588,6 +540,39 @@ export default function Settings() {
           </div>
         )}
       </div>
+
+      {/* Barra Fixa Inferior de Salvar */}
+      {hasChanges && (
+        <div className="fixed bottom-16 sm:bottom-0 left-0 right-0 bg-white border-t border-slate-100 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] p-4 z-50">
+          <div className="max-w-4xl mx-auto flex flex-col items-center gap-2">
+            <button
+              onClick={handleSaveSettings}
+              disabled={isSaving}
+              className={clsx(
+                "w-full sm:w-auto flex items-center justify-center space-x-2 px-8 py-3 rounded-xl font-bold transition-all shadow-md active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed",
+                showSaveSuccess 
+                  ? "bg-emerald-500 text-white shadow-emerald-200" 
+                  : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100"
+              )}
+            >
+              {isSaving ? (
+                <RefreshCw size={20} className="animate-spin" />
+              ) : showSaveSuccess ? (
+                <CheckCircle2 size={20} />
+              ) : (
+                <Save size={20} />
+              )}
+              <span>{isSaving ? 'Salvando...' : showSaveSuccess ? 'Salvo com Sucesso' : 'Salvar Configurações'}</span>
+            </button>
+            {saveError && (
+              <div className="flex items-center space-x-2 text-rose-500 text-xs font-bold animate-in fade-in slide-in-from-top-1">
+                <AlertCircle size={14} />
+                <span>{saveError}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

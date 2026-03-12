@@ -124,6 +124,40 @@ const MobileFilterSection = ({
   );
 };
 
+const FilterModal = ({ 
+  isOpen, 
+  onClose, 
+  ufFilter, setUfFilter, 
+  statusFilter, setStatusFilter, 
+  esferaFilter, setEsferaFilter, 
+  modalidadeFilter, setModalidadeFilter, 
+  onApply, 
+  ufs, esferas, modalidades 
+}: any) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 relative z-10 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-black text-slate-900">Filtros</h2>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full"><X size={20} /></button>
+        </div>
+        <div className="space-y-6">
+          <MobileFilterSection label="Estado (UF)" options={ufs} selected={ufFilter} onChange={setUfFilter} />
+          <MobileFilterSection label="Esfera" options={esferas} selected={esferaFilter} onChange={setEsferaFilter} />
+          <MobileFilterSection label="Modalidade" options={modalidades} selected={modalidadeFilter} onChange={setModalidadeFilter} />
+          <MobileFilterSection label="Status" options={['Aberto', 'Autorizado', 'Comissão Formada', 'Previsto', 'Solicitado', 'Encerrado']} selected={statusFilter} onChange={setStatusFilter} />
+        </div>
+        <div className="mt-8 pt-6 border-t flex gap-3">
+          <button onClick={onClose} className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-slate-100">Cancelar</button>
+          <button onClick={onApply} className="flex-1 py-3 rounded-xl font-bold text-white bg-indigo-600 shadow-lg shadow-indigo-200">Aplicar Filtros</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function Opportunities() {
   const { concursos, scoringRules, userProfileScoring, markInterest, updateConcurso, toggleFavorite, setConcursos } = useConcursoStore();
   const [filter, setFilter] = useState('');
@@ -177,12 +211,6 @@ export default function Opportunities() {
   };
 
   const isFilterActive = ufFilter.length > 0 || statusFilter.length > 0 || esferaFilter.length > 0 || modalidadeFilter.length > 0;
-
-  useEffect(() => {
-    if (!isFilterActive) {
-      setAppliedFilters({ uf: [], status: [], esfera: [], modalidade: [] });
-    }
-  }, [isFilterActive]);
 
   const handleApplyFilters = () => {
     setAppliedFilters({
@@ -278,86 +306,9 @@ export default function Opportunities() {
           <h2 className="text-2xl font-bold text-slate-900">Oportunidades</h2>
           <p className="text-slate-500">Encontre e gerencie concursos públicos.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsFilterDrawerOpen(true)}
-            className="md:hidden flex items-center justify-center space-x-2 bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
-          >
-            <Filter size={18} />
-            <span>Filtros</span>
-          </button>
-        </div>
       </div>
 
-      {/* Quick Filter Chips */}
-      <div className="flex overflow-x-auto pb-2 gap-2 no-scrollbar px-4 md:px-0">
-        <button
-          onClick={() => { 
-            const newStatus = statusFilter.includes('Aberto') ? [] : ['Aberto'];
-            setStatusFilter(newStatus);
-            setAppliedFilters(prev => ({ ...prev, status: newStatus }));
-            setVisibleCount(50);
-          }}
-          className={clsx(
-            "flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
-            appliedFilters.status.includes('Aberto') ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
-          )}
-        >
-          Inscrições Abertas
-        </button>
-        <button
-          onClick={() => { 
-            const newEsfera = esferaFilter.includes('Federal') ? [] : ['Federal'];
-            setEsferaFilter(newEsfera);
-            setAppliedFilters(prev => ({ ...prev, esfera: newEsfera }));
-            setVisibleCount(50);
-          }}
-          className={clsx(
-            "flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
-            appliedFilters.esfera.includes('Federal') ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
-          )}
-        >
-          Federal
-        </button>
-        <button
-          onClick={() => { 
-            const newUf = ufFilter.includes('SP') ? [] : ['SP'];
-            setUfFilter(newUf);
-            setAppliedFilters(prev => ({ ...prev, uf: newUf }));
-            setVisibleCount(50);
-          }}
-          className={clsx(
-            "flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
-            appliedFilters.uf.includes('SP') ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
-          )}
-        >
-          São Paulo
-        </button>
-        <button
-          onClick={() => { 
-            const newUf = ufFilter.includes('RJ') ? [] : ['RJ'];
-            setUfFilter(newUf);
-            setAppliedFilters(prev => ({ ...prev, uf: newUf }));
-            setVisibleCount(50);
-          }}
-          className={clsx(
-            "flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
-            appliedFilters.uf.includes('RJ') ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
-          )}
-        >
-          Rio de Janeiro
-        </button>
-        {isFilterActive && (
-          <button
-            onClick={clearFilters}
-            className="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition-all"
-          >
-            Limpar Filtros
-          </button>
-        )}
-      </div>
-
-      {/* BARRA DE AÇÕES (Busca sempre visível, Botão de Filtro apenas no Mobile) */}
+      {/* BARRA DE AÇÕES UNIFICADA */}
       <div className="flex gap-2 mb-6 px-4 md:px-0">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -373,62 +324,40 @@ export default function Opportunities() {
           />
         </div>
         
-        {/* Botão que só aparece no Mobile */}
         <button 
           onClick={() => setIsFilterDrawerOpen(true)}
-          className="md:hidden flex items-center justify-center p-2 bg-indigo-600 text-white rounded-lg shadow-md active:scale-95 transition-transform"
+          className={clsx(
+            "flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition-all",
+            isFilterActive 
+              ? "bg-indigo-50 text-indigo-600 border-indigo-200" 
+              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+          )}
         >
-          <Filter size={24} />
+          <Filter size={20} />
+          <span className="hidden md:inline font-medium text-sm">Filtros</span>
         </button>
+
+        {isFilterActive && (
+          <button
+            onClick={clearFilters}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all"
+          >
+            <Trash2 size={20} />
+            <span className="hidden md:inline font-medium text-sm">Limpar</span>
+          </button>
+        )}
       </div>
 
-      {/* --- FILTROS DESKTOP (Visível apenas em md:) --- */}
-      <div className="hidden md:flex flex-wrap gap-4 mb-8 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-        <div className="flex-1 min-w-[150px]">
-          <MultiSelect 
-            label="Estado (UF)"
-            options={ufs}
-            selected={ufFilter}
-            onChange={setUfFilter}
-            placeholder="Todas as UFs"
-          />
-        </div>
-        <div className="flex-1 min-w-[150px]">
-          <MultiSelect 
-            label="Esfera"
-            options={esferas}
-            selected={esferaFilter}
-            onChange={setEsferaFilter}
-            placeholder="Todas as Esferas"
-          />
-        </div>
-        <div className="flex-1 min-w-[150px]">
-          <MultiSelect 
-            label="Modalidade"
-            options={modalidades}
-            selected={modalidadeFilter}
-            onChange={setModalidadeFilter}
-            placeholder="Todas as Modalidades"
-          />
-        </div>
-        <div className="flex-1 min-w-[150px]">
-          <MultiSelect 
-            label="Status"
-            options={['Aberto', 'Autorizado', 'Comissão Formada', 'Previsto', 'Solicitado', 'Encerrado']}
-            selected={statusFilter}
-            onChange={setStatusFilter}
-            placeholder="Todos os Status"
-          />
-        </div>
-        <div className="flex items-end">
-          <button
-            onClick={handleApplyFilters}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition-all active:scale-95"
-          >
-            Filtrar
-          </button>
-        </div>
-      </div>
+      <FilterModal 
+        isOpen={isFilterDrawerOpen} 
+        onClose={() => setIsFilterDrawerOpen(false)}
+        ufFilter={ufFilter} setUfFilter={setUfFilter}
+        statusFilter={statusFilter} setStatusFilter={setStatusFilter}
+        esferaFilter={esferaFilter} setEsferaFilter={setEsferaFilter}
+        modalidadeFilter={modalidadeFilter} setModalidadeFilter={setModalidadeFilter}
+        onApply={handleApplyFilters}
+        ufs={ufs} esferas={esferas} modalidades={modalidades}
+      />
 
       {/* MOBILE: Cards (hidden em md:) */}
       <div className="md:hidden grid grid-cols-1 gap-4 px-4">
@@ -490,16 +419,25 @@ export default function Opportunities() {
 
                     <div className="flex flex-wrap items-center gap-2 mb-4">
                       <StatusBadge status={status as any} />
-                      <div className="flex items-center space-x-1 bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-100">
-                        <Trophy size={10} />
+                      <div className={clsx(
+                        "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-sm",
+                        c.calculatedScore < 30 ? "bg-rose-100/50 text-rose-800 border-rose-200" :
+                        c.calculatedScore < 70 ? "bg-amber-100/50 text-amber-800 border-amber-200" :
+                        "bg-emerald-100/50 text-emerald-800 border-emerald-200"
+                      )}>
+                        <Trophy size={12} className={clsx(
+                          c.calculatedScore < 30 ? "text-rose-600" :
+                          c.calculatedScore < 70 ? "text-amber-600" :
+                          "text-emerald-600"
+                        )} />
                         <span>Score: {c.calculatedScore}</span>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 py-3 border-y border-slate-50 mb-4">
                       <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Banca</p>
-                        <p className="text-sm font-bold text-slate-700 truncate">{c.board}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Vagas</p>
+                        <p className="text-sm font-bold text-slate-700 truncate">{c.vacancies}</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Salário</p>
@@ -507,80 +445,93 @@ export default function Opportunities() {
                       </div>
                     </div>
 
-                    <div className="mt-auto flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1">
-                        {c.interest_status === 'interested' ? (
-                          <button 
-                            onClick={() => handleMarkInterest(c.id, 'none')}
-                            className="flex items-center gap-1 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm"
-                          >
-                            <Check size={14} />
-                            <span>Interessado</span>
-                          </button>
-                        ) : c.interest_status === 'ignored' ? (
-                          <button 
-                            onClick={() => handleMarkInterest(c.id, 'none')}
-                            className="flex items-center gap-1 bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold"
-                          >
-                            <RefreshCw size={14} />
-                            <span>Restaurar</span>
-                          </button>
-                        ) : (
-                          <div className="flex items-center gap-1">
+                    <div className="mt-auto flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1">
+                          {c.interest_status === 'interested' ? (
                             <button 
-                              onClick={() => handleMarkInterest(c.id, 'interested')}
-                              className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors"
+                              onClick={() => handleMarkInterest(c.id, 'none')}
+                              className="flex items-center gap-1 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm"
                             >
-                              Interesse
+                              <Check size={14} />
+                              <span>Interessado</span>
                             </button>
+                          ) : c.interest_status === 'ignored' ? (
                             <button 
-                              onClick={() => handleMarkInterest(c.id, 'ignored')}
-                              className="bg-rose-50 text-rose-700 border border-rose-100 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-100 transition-colors"
+                              onClick={() => handleMarkInterest(c.id, 'none')}
+                              className="flex items-center gap-1 bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold"
                             >
-                              Ignorar
+                              <RefreshCw size={14} />
+                              <span>Restaurar</span>
                             </button>
-                          </div>
-                        )}
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <button 
+                                onClick={() => handleMarkInterest(c.id, 'interested')}
+                                className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors"
+                              >
+                                Interesse
+                              </button>
+                              <button 
+                                onClick={() => handleMarkInterest(c.id, 'ignored')}
+                                className="p-2 text-slate-400 hover:text-rose-500 transition-colors"
+                                title="Ignorar"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <button 
                         onClick={() => setExpandedRow(isExpanded ? null : c.id)}
-                        className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"
+                        className={clsx(
+                          "w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all",
+                          isExpanded
+                            ? "bg-slate-100 text-slate-700"
+                            : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                        )}
                       >
-                        {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                        {isExpanded ? "Ocultar detalhes" : "Ver detalhes"}
+                        <ChevronDown size={14} className={clsx("transition-transform", isExpanded && "rotate-180")} />
                       </button>
                     </div>
                   </div>
 
                   {isExpanded && (
                     <div className="p-4 bg-slate-50 border-t border-slate-100 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Vagas</p>
-                          <p className="text-xs text-slate-700 font-medium">{c.vacancies}</p>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Vagas</p>
+                            <p className="text-xs text-slate-700 font-medium">{c.vacancies}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Esfera</p>
+                            <p className="text-xs text-slate-700 font-medium">{c.esfera}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Inscrições até</p>
+                            <p className="text-xs text-slate-700 font-medium">{c.registration_end}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Prova</p>
+                            <p className="text-xs text-slate-700 font-medium">{c.exam_date}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Prova</p>
-                          <p className="text-xs text-slate-700 font-medium">{c.exam_date}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Inscrições até</p>
-                          <p className="text-xs text-slate-700 font-medium">{c.registration_end}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Esfera</p>
-                          <p className="text-xs text-slate-700 font-medium">{c.esfera}</p>
-                        </div>
+
                         {c.etapas && (
-                          <div className="col-span-2">
+                          <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Etapas</p>
                             <p className="text-xs text-slate-700 font-medium">{c.etapas}</p>
                           </div>
                         )}
-                        <div className="col-span-2">
+
+                        <div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Cargos</p>
                           <PositionsList positions={c.positions} />
                         </div>
-                        <div className="col-span-2">
+                        <div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Disciplinas</p>
                           <p className="text-xs text-slate-700 font-medium line-clamp-3">{c.subjects}</p>
                         </div>
@@ -705,9 +656,14 @@ export default function Opportunities() {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center space-x-2 text-emerald-600">
+                            <div className={clsx(
+                              "flex items-center space-x-2 font-bold",
+                              c.calculatedScore < 30 ? "text-rose-600" :
+                              c.calculatedScore < 70 ? "text-amber-600" :
+                              "text-emerald-600"
+                            )}>
                               <Trophy size={16} />
-                              <span className="font-bold text-base">{c.calculatedScore}</span>
+                              <span className="text-base">{c.calculatedScore}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -743,14 +699,12 @@ export default function Opportunities() {
                               <button 
                                 onClick={() => handleMarkInterest(c.id, c.interest_status === 'ignored' ? 'none' : 'ignored')}
                                 className={clsx(
-                                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-sm",
-                                  c.interest_status === 'ignored'
-                                    ? "bg-rose-600 text-white hover:bg-rose-700"
-                                    : "bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100"
+                                  "p-2 rounded-lg transition-all",
+                                  c.interest_status === 'ignored' ? "text-rose-600" : "text-slate-400 hover:text-rose-500 hover:bg-rose-50"
                                 )}
+                                title={c.interest_status === 'ignored' ? 'Ignorado' : 'Ignorar'}
                               >
-                                <X size={14} />
-                                <span>{c.interest_status === 'ignored' ? 'Ignorado' : 'Ignorar'}</span>
+                                <X size={18} />
                               </button>
                             </div>
                           </td>

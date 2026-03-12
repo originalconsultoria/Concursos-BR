@@ -62,7 +62,7 @@ function Sidebar() {
   const visibleLinks = user ? links.filter(l => l.to !== '/auth') : links;
   
   return (
-    <div className="hidden md:flex w-64 bg-slate-900 text-white h-full flex-col">
+    <div className="hidden md:flex w-64 bg-slate-900 dark:bg-slate-900 text-white h-full flex-col">
       <div className="p-6 flex items-center gap-3">
         <Logo className="w-10 h-10" />
         <h1 className="text-xl font-bold tracking-tight">Concursos BR</h1>
@@ -109,7 +109,7 @@ function BottomNav() {
   };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200 flex justify-around items-center pb-safe z-50 px-1 h-16">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 flex justify-around items-center pb-safe z-50 px-1 h-16">
       {visibleLinks.map((link) => {
         const Icon = link.icon;
         const isActive = location.pathname === link.to;
@@ -119,11 +119,11 @@ function BottomNav() {
             to={link.to}
             className={clsx(
               'flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-200 relative',
-              isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
+              isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
             )}
           >
             {isActive && (
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-indigo-600 rounded-b-full" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-indigo-600 dark:bg-indigo-400 rounded-b-full" />
             )}
             <Icon size={22} className={clsx("transition-transform duration-200", isActive && "scale-110 -translate-y-0.5")} />
             <span className={clsx(
@@ -141,10 +141,10 @@ function BottomNav() {
 
 function MobileHeader() {
   return (
-    <div className="md:hidden flex items-center justify-between bg-white/80 backdrop-blur-lg text-slate-900 px-4 py-3 sticky top-0 z-50 border-b border-slate-100">
+    <div className="md:hidden flex items-center justify-between bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg text-slate-900 dark:text-white px-4 py-3 sticky top-0 z-50 border-b border-slate-100 dark:border-slate-800">
       <div className="flex items-center gap-2">
         <Logo />
-        <h1 className="text-lg font-extrabold tracking-tight text-slate-900">Concursos BR</h1>
+        <h1 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Concursos BR</h1>
       </div>
       <SyncStatusIndicator className="px-0 py-0" />
     </div>
@@ -158,11 +158,11 @@ export default function App() {
 
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
+      <div className="flex h-screen bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <MobileHeader />
-          <main className="flex-1 p-0 md:p-8 overflow-y-auto pb-20 md:pb-8">
+          <main className="flex-1 p-0 md:p-8 overflow-y-auto pb-20 md:pb-8 dark:bg-slate-950">
             <Routes>
               <Route path="/" element={<Opportunities />} />
               <Route path="/my-exams" element={<MyExams />} />
