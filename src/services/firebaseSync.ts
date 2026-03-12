@@ -126,7 +126,15 @@ export const fetchGlobalConcursos = async () => {
       };
     });
 
+    // CORREÇÃO: Bloqueia a gravação no Firebase antes de atualizar o estado local
+    isSyncingFromFirebase = true;
+    
+    // Atualiza apenas a visualização (Store)
     store.setConcursos([...localOnly, ...mergedGlobal]);
+    
+    // Libera a gravação logo após o estado atualizar (Zustand é síncrono)
+    isSyncingFromFirebase = false;
+
     return true;
   } catch (error: any) {
     console.error("Error fetching global concursos from Firebase:", error);

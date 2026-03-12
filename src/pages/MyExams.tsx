@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { MapPin, Calendar, FileText, ExternalLink, Save, Map as MapIcon, Check, Star, Bookmark, Trophy } from 'lucide-react';
+import { MapPin, Calendar, FileText, ExternalLink, Save, Map as MapIcon, Check, Star, Bookmark, Trophy, TrendingUp, Trash2 } from 'lucide-react';
 import { useConcursoStore, Concurso } from '../store';
 import { calculateScore } from '../utils/scoring';
 import { parseNamedLinks } from '../utils/concursoUtils';
 import clsx from 'clsx';
+import Dashboard from './Dashboard';
 
 export default function MyExams() {
-  const { concursos, scoringRules, userProfileScoring, updateConcurso, toggleFavorite } = useConcursoStore();
+  const { concursos, scoringRules, userProfileScoring, updateConcurso, toggleFavorite, markInterest, deleteConcurso } = useConcursoStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Concurso>>({});
   const [enriching, setEnriching] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'interested' | 'favorites'>('interested');
+  const [activeTab, setActiveTab] = useState<'interested' | 'favorites' | 'analysis'>('interested');
 
   const myExams = concursos.filter(c => c.interest_status === 'interested');
   const favoriteExams = concursos.filter(c => c.is_favorite);
@@ -49,13 +50,13 @@ export default function MyExams() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Meus Concursos</h2>
-          <p className="text-slate-500">Gerencie suas inscrições e concursos favoritos.</p>
+          <p className="text-slate-500">Gerencie suas inscrições, favoritos e análise de perfil.</p>
         </div>
-        <div className="flex bg-slate-100 p-1 rounded-lg">
+        <div className="flex bg-slate-100 p-1 rounded-lg overflow-x-auto hide-scrollbar">
           <button
             onClick={() => setActiveTab('interested')}
             className={clsx(
-              "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+              "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
               activeTab === 'interested' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-600 hover:text-slate-900"
             )}
           >
@@ -65,12 +66,22 @@ export default function MyExams() {
           <button
             onClick={() => setActiveTab('favorites')}
             className={clsx(
-              "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+              "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
               activeTab === 'favorites' ? "bg-white text-amber-500 shadow-sm" : "text-slate-600 hover:text-slate-900"
             )}
           >
             <Star size={16} />
             <span>Favoritos</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('analysis')}
+            className={clsx(
+              "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
+              activeTab === 'analysis' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-600 hover:text-slate-900"
+            )}
+          >
+            <TrendingUp size={16} />
+            <span>Análise</span>
           </button>
         </div>
       </div>
@@ -96,6 +107,8 @@ export default function MyExams() {
                 handleSave={handleSave}
                 enrichLocation={enrichLocation}
                 toggleFavorite={toggleFavorite}
+                markInterest={markInterest}
+                deleteConcurso={deleteConcurso}
               />
             ))}
           </div>
@@ -116,21 +129,26 @@ export default function MyExams() {
                 scoringRules={scoringRules}
                 userProfileScoring={userProfileScoring}
                 toggleFavorite={toggleFavorite}
+                deleteConcurso={deleteConcurso}
               />
             ))}
           </div>
         )
       )}
+
+      {activeTab === 'analysis' && (
+        <Dashboard />
+      )}
     </div>
   );
 }
 
-function CompactConcursoCard({ c, scoringRules, userProfileScoring, toggleFavorite }: any) {
+function CompactConcursoCard({ c, scoringRules, userProfileScoring, toggleFavorite, deleteConcurso }: any) {
   const score = calculateScore(c, scoringRules, userProfileScoring);
   
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative group hover:border-indigo-100 transition-colors">
-      <div className="flex-1 pr-8 sm:pr-0">
+      <div className="flex-1 pr-16 sm:pr-0">
         <div className="flex items-center gap-2 mb-1.5">
           <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{c.source}</span>
           <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{c.location}</span>
@@ -156,7 +174,7 @@ function CompactConcursoCard({ c, scoringRules, userProfileScoring, toggleFavori
           </div>
           {c.salary && c.salary !== 'N/A' && (
             <div className="flex items-center space-x-1.5">
-              <span className="font-medium text-emerald-600">{c.salary}</span>
+               <span className="font-medium text-emerald-600">{c.salary}</span>
             </div>
           )}
         </div>
@@ -203,36 +221,64 @@ function CompactConcursoCard({ c, scoringRules, userProfileScoring, toggleFavori
         )}
       </div>
 
-      <button 
-        onClick={(e) => {
-          e.preventDefault();
-          toggleFavorite(c.id);
-        }}
-        className="absolute top-4 right-4 p-1.5 text-amber-400 hover:text-amber-500 hover:bg-amber-50 rounded-md transition-colors"
-        title="Remover dos favoritos"
-      >
-        <Star size={20} fill="currentColor" />
-      </button>
+      <div className="absolute top-4 right-4 flex items-center gap-1">
+        <button 
+          onClick={(e) => {
+            e.preventDefault();
+            toggleFavorite(c);
+          }}
+          className="p-1.5 text-amber-400 hover:text-amber-500 hover:bg-amber-50 rounded-md transition-colors"
+          title="Remover dos favoritos"
+        >
+          <Star size={20} fill="currentColor" />
+        </button>
+        <button 
+          onClick={(e) => {
+            e.preventDefault();
+            if (window.confirm('Deseja remover este concurso permanentemente?')) {
+              deleteConcurso(c);
+            }
+          }}
+          className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+          title="Excluir permanentemente"
+        >
+          <Trash2 size={20} />
+        </button>
+      </div>
     </div>
   );
 }
 
-function ConcursoCard({ c, scoringRules, userProfileScoring, editingId, editForm, setEditForm, enriching, handleEdit, handleSave, enrichLocation, toggleFavorite }: any) {
+function ConcursoCard({ c, scoringRules, userProfileScoring, editingId, editForm, setEditForm, enriching, handleEdit, handleSave, enrichLocation, toggleFavorite, markInterest, deleteConcurso }: any) {
   const score = calculateScore(c, scoringRules, userProfileScoring);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 md:p-6 space-y-4 relative">
-      <button 
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleFavorite(c.id);
-        }}
-        className="absolute top-4 md:top-6 right-12 md:right-14 p-2 text-slate-300 hover:text-amber-400 transition-colors"
-        title={c.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-      >
-        <Star size={20} fill={c.is_favorite ? "#fbbf24" : "none"} className={c.is_favorite ? "text-amber-400" : ""} />
-      </button>
-      <div className="flex justify-between items-start pr-16">
+      <div className="absolute top-4 md:top-6 right-12 md:right-14 flex items-center gap-1">
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFavorite(c);
+          }}
+          className="p-2 text-slate-300 hover:text-amber-400 transition-colors"
+          title={c.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+        >
+          <Star size={20} fill={c.is_favorite ? "#fbbf24" : "none"} className={c.is_favorite ? "text-amber-400" : ""} />
+        </button>
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            if (window.confirm('Deseja remover este concurso permanentemente?')) {
+              deleteConcurso(c);
+            }
+          }}
+          className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+          title="Excluir permanentemente"
+        >
+          <Trash2 size={20} />
+        </button>
+      </div>
+      <div className="flex justify-between items-start pr-24">
         <div>
           <h3 className="font-bold text-lg text-slate-900">{c.institution}</h3>
           <div className="flex items-center gap-2 mt-1">

@@ -1,5 +1,6 @@
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { useConcursoStore, Concurso } from '../store';
 import { useState, useCallback } from 'react';
 import { MapPin, Calendar, ExternalLink, Navigation, X, Trophy } from 'lucide-react';
@@ -47,6 +48,20 @@ export default function MapView() {
       </div>
 
       <div className="flex-1 bg-slate-100 relative overflow-hidden">
+        {mappedConcursos.length === 0 && (
+          <div className="absolute inset-0 z-[2000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-8 max-w-md text-center shadow-2xl">
+              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MapPin size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Nenhum local mapeado</h3>
+              <p className="text-slate-500 mb-6 text-sm">
+                Para visualizar concursos no mapa, vá até a aba <strong>Meus Concursos</strong>, clique em <strong>Editar Detalhes</strong> de um concurso e use o botão <strong>Buscar no Mapa</strong> para definir o local de prova.
+              </p>
+            </div>
+          </div>
+        )}
+
         <MapContainer 
           center={center} 
           zoom={4} 

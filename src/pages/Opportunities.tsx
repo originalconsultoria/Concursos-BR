@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Check, X, Search, Filter, ArrowUp, ArrowDown, ArrowUpDown, Download, ChevronDown, ChevronRight, BookOpen, Briefcase, Globe, Layout, ListChecks, Star, MapPin, Trophy, ExternalLink, RefreshCw, Calendar } from 'lucide-react';
+import { Check, X, Search, Filter, ArrowUp, ArrowDown, ArrowUpDown, Download, ChevronDown, ChevronRight, BookOpen, Briefcase, Globe, Layout, ListChecks, Star, MapPin, Trophy, ExternalLink, RefreshCw, Calendar, Trash2 } from 'lucide-react';
 import { useConcursoStore, Concurso } from '../store';
 import { CSVUpload } from '../components/CSVUpload';
 import { StatusBadge } from '../components/StatusBadge';
@@ -127,13 +127,13 @@ const MobileFilterSection = ({
 };
 
 export default function Opportunities() {
-  const { concursos, scoringRules, userProfileScoring, markInterest, updateConcurso, toggleFavorite } = useConcursoStore();
+  const { concursos, scoringRules, userProfileScoring, markInterest, updateConcurso, toggleFavorite, setConcursos } = useConcursoStore();
   const [filter, setFilter] = useState('');
   const [ufFilter, setUfFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [esferaFilter, setEsferaFilter] = useState<string[]>([]);
   const [modalidadeFilter, setModalidadeFilter] = useState<string[]>([]);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<{
     uf: string[];
@@ -192,17 +192,27 @@ export default function Opportunities() {
   };
 
   const handleSync = async () => {
-    setIsSyncing(true);
+    setSyncStatus('syncing');
     try {
       const success = await fetchGlobalConcursos();
       if (success) {
         // Reset filters and pagination if needed
         setVisibleCount(50);
+        setSyncStatus('success');
       } else {
-        alert("Não foi possível sincronizar os dados. Verifique sua conexão ou tente novamente mais tarde.");
+        setSyncStatus('error');
       }
+    } catch (error) {
+      console.error("Erro na sincronização:", error);
+      setSyncStatus('error');
     } finally {
-      setIsSyncing(false);
+      setTimeout(() => setSyncStatus('idle'), 3000);
+    }
+  };
+
+  const handleClearData = () => {
+    if (window.confirm("Tem certeza que deseja limpar toda a base de dados de concursos? Esta ação não pode ser desfeita e removerá todos os concursos da sua lista.")) {
+      setConcursos([]);
     }
   };
 
@@ -334,12 +344,37 @@ export default function Opportunities() {
         <div className="flex items-center gap-2">
           <button
             onClick={handleSync}
-            disabled={isSyncing}
-            className="flex-1 md:flex-none flex items-center justify-center space-x-2 bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50 font-medium text-sm"
+            disabled={syncStatus === 'syncing'}
+            className={clsx(
+              "flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 font-medium text-sm border",
+              syncStatus === 'success' ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" :
+              syncStatus === 'error' ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" :
+              "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+            )}
           >
-            <RefreshCw size={18} className={isSyncing ? "animate-spin" : ""} />
-            <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'Sincronizar'}</span>
-            <span className="sm:hidden">{isSyncing ? '...' : 'Sinc.'}</span>
+            {syncStatus === 'success' ? <Check size={18} /> :
+             syncStatus === 'error' ? <X size={18} /> :
+             <RefreshCw size={18} className={syncStatus === 'syncing' ? "animate-spin" : ""} />}
+            <span className="hidden sm:inline">
+              {syncStatus === 'syncing' ? 'Sincronizando...' : 
+               syncStatus === 'success' ? 'Sincronizado!' :
+               syncStatus === 'error' ? 'Erro ao sincronizar' :
+               'Sincronizar'}
+            </span>
+            <span className="sm:hidden">
+              {syncStatus === 'syncing' ? '...' : 
+               syncStatus === 'success' ? 'OK' :
+               syncStatus === 'error' ? 'Erro' :
+               'Sinc.'}
+            </span>
+          </button>
+          <button
+            onClick={handleClearData}
+            className="flex-1 md:flex-none flex items-center justify-center space-x-2 bg-rose-50 text-rose-700 border border-rose-200 px-4 py-2 rounded-lg hover:bg-rose-100 transition-colors font-medium text-sm"
+            title="Limpar todos os concursos"
+          >
+            <Trash2 size={18} />
+            <span className="hidden sm:inline">Limpar Dados</span>
           </button>
           <button
             onClick={() => setIsFilterDrawerOpen(true)}
@@ -542,7 +577,7 @@ export default function Opportunities() {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          toggleFavorite(c.id);
+                          toggleFavorite(c);
                         }}
                         className={clsx(
                           "flex-shrink-0 p-1 transition-colors",

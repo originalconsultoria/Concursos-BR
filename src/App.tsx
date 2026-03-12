@@ -1,13 +1,15 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map as MapIcon, Settings as SettingsIcon, Bookmark, User as UserIcon, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Map as MapIcon, Settings as SettingsIcon, Bookmark, User as UserIcon } from 'lucide-react';
 import clsx from 'clsx';
 import Opportunities from './pages/Opportunities';
-import Dashboard from './pages/Dashboard';
+import MyExams from './pages/MyExams';
+import MapView from './pages/Map';
+import Settings from './pages/Settings';
+import Auth from './pages/Auth';
 import { Logo } from './components/Logo';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Oportunidades' },
-  { to: '/dashboard', icon: TrendingUp, label: 'Análise' },
   { to: '/my-exams', icon: Bookmark, label: 'Meus Concursos' },
   { to: '/map', icon: MapIcon, label: 'Mapa' },
   { to: '/settings', icon: SettingsIcon, label: 'Configurações' },
@@ -86,13 +88,6 @@ function MobileHeader() {
   );
 }
 
-const PlaceholderPage = ({ title }: { title: string }) => (
-  <div className="flex flex-col items-center justify-center h-full text-slate-400">
-    <h2 className="text-2xl font-bold">{title}</h2>
-    <p>Página em desenvolvimento...</p>
-  </div>
-);
-
 export default function App() {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
@@ -103,11 +98,10 @@ export default function App() {
           <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-20 md:pb-8">
             <Routes>
               <Route path="/" element={<Opportunities />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/my-exams" element={<PlaceholderPage title="Meus Concursos" />} />
-              <Route path="/map" element={<PlaceholderPage title="Mapa" />} />
-              <Route path="/settings" element={<PlaceholderPage title="Configurações" />} />
-              <Route path="/auth" element={<PlaceholderPage title="Perfil" />} />
+              <Route path="/my-exams" element={<MyExams />} />
+              <Route path="/map" element={<MapView />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/auth" element={<Auth />} />
             </Routes>
           </main>
         </div>

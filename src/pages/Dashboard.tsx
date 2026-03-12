@@ -75,11 +75,6 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
-      <header>
-        <h2 className="text-3xl font-black tracking-tight text-slate-900">Análise de Perfil</h2>
-        <p className="text-slate-500 mt-1">Visualize sua compatibilidade e progresso nos concursos.</p>
-      </header>
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[

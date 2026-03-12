@@ -74,7 +74,7 @@ interface ConcursoStore {
   setConcursos: (concursos: Concurso[]) => void;
   updateConcurso: (id: string, updates: Partial<Concurso>) => void;
   markInterest: (id: string, status: 'interested' | 'ignored' | 'none') => void;
-  toggleFavorite: (id: string) => void;
+  toggleFavorite: (idOrConcurso: string | Concurso) => void;
   setScoringRules: (rules: ScoringRule[]) => void;
   addScoringRule: (rule: ScoringRule) => void;
   removeScoringRule: (id: string) => void;
@@ -82,6 +82,7 @@ interface ConcursoStore {
   updateUserProfileScoring: (updates: Partial<UserProfileScoring>) => void;
   updateNotificationSettings: (updates: Partial<NotificationSettings>) => void;
   setLastSeenExamIds: (ids: string[]) => void;
+  deleteConcurso: (concurso: Concurso) => void;
 }
 
 export const useConcursoStore = create<ConcursoStore>()(
@@ -119,11 +120,26 @@ export const useConcursoStore = create<ConcursoStore>()(
             c.id === id ? { ...c, interest_status: status } : c
           ),
         })),
-      toggleFavorite: (id) =>
+      toggleFavorite: (idOrConcurso) =>
         set((state) => ({
-          concursos: state.concursos.map((c) =>
-            c.id === id ? { ...c, is_favorite: !c.is_favorite } : c
-          ),
+          concursos: state.concursos.map((c) => {
+            if (typeof idOrConcurso === 'string') {
+              return c.id === idOrConcurso ? { ...c, is_favorite: !c.is_favorite } : c;
+            }
+            // Fallback for malformed data without ID
+            if (idOrConcurso.id && c.id) {
+              return c.id === idOrConcurso.id ? { ...c, is_favorite: !c.is_favorite } : c;
+            }
+            return c === idOrConcurso ? { ...c, is_favorite: !c.is_favorite } : c;
+          }),
+        })),
+      deleteConcurso: (concurso) =>
+        set((state) => ({
+          concursos: state.concursos.filter((c) => {
+            if (concurso.id && c.id) return c.id !== concurso.id;
+            // Fallback for malformed data without ID
+            return c !== concurso;
+          }),
         })),
       setScoringRules: (rules) => set({ scoringRules: rules }),
       addScoringRule: (rule) => set((state) => ({ scoringRules: [...state.scoringRules, rule] })),
