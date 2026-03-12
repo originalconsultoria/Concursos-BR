@@ -57,6 +57,9 @@ function SyncStatusIndicator({ className }: { className?: string }) {
 
 function Sidebar() {
   const location = useLocation();
+  const user = useConcursoStore((state) => state.user);
+  
+  const visibleLinks = user ? links.filter(l => l.to !== '/auth') : links;
   
   return (
     <div className="hidden md:flex w-64 bg-slate-900 text-white h-full flex-col">
@@ -65,7 +68,7 @@ function Sidebar() {
         <h1 className="text-xl font-bold tracking-tight">Concursos BR</h1>
       </div>
       <nav className="flex-1 px-4 space-y-2">
-        {links.map((link) => {
+        {visibleLinks.map((link) => {
           const Icon = link.icon;
           const isActive = location.pathname === link.to;
           return (
@@ -92,6 +95,9 @@ function Sidebar() {
 
 function BottomNav() {
   const location = useLocation();
+  const user = useConcursoStore((state) => state.user);
+
+  const visibleLinks = user ? links.filter(l => l.to !== '/auth') : links;
 
   const getShortLabel = (label: string) => {
     switch (label) {
@@ -104,7 +110,7 @@ function BottomNav() {
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200 flex justify-around items-center pb-safe z-50 px-1 h-16">
-      {links.map((link) => {
+      {visibleLinks.map((link) => {
         const Icon = link.icon;
         const isActive = location.pathname === link.to;
         return (
@@ -156,7 +162,7 @@ export default function App() {
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <MobileHeader />
-          <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-20 md:pb-8">
+          <main className="flex-1 p-0 md:p-8 overflow-y-auto pb-20 md:pb-8">
             <Routes>
               <Route path="/" element={<Opportunities />} />
               <Route path="/my-exams" element={<MyExams />} />

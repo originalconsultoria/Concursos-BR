@@ -212,32 +212,45 @@ export const initFirebaseSync = () => {
     }
   });
 
-  useConcursoStore.subscribe((state, prevState) => {
+  const initialState = useConcursoStore.getState();
+  let lastConcursos = initialState.concursos;
+  let lastProfile = initialState.userProfileScoring;
+  let lastRules = initialState.scoringRules;
+
+  useConcursoStore.subscribe((state) => {
     if (isSyncingFromFirebase || !state.user) {
       return;
     }
 
-    if (
-      state.concursos !== prevState.concursos
-    ) {
-      state.setSyncStatus('syncing');
-      const userDocRef = doc(db, 'usuarios', state.user.uid);
-      setDoc(userDocRef, {
-        concursos: extractUserPreferences(state.concursos),
-        lastUpdated: new Date().toISOString(),
-      }, { merge: true })
+    const concursosChanged = state.concursos !== lastConcursos;
+
+    if (!concursosChanged) {
+      return;
+    }
+
+    // Update trackers
+    lastConcursos = state.concursos;
+
+    state.setSyncStatus('syncing');
+    const userDocRef = doc(db, 'usuarios', state.user.uid);
+    
+    const updateData: any = {
+      lastUpdated: new Date().toISOString(),
+      concursos: extractUserPreferences(state.concursos)
+    };
+
+    setDoc(userDocRef, updateData, { merge: true })
       .then(() => useConcursoStore.getState().setSyncStatus('synced'))
       .catch((err) => {
         console.error("Sync error:", err);
         useConcursoStore.getState().setSyncStatus('error');
       });
-    }
   });
 };
 
 export const saveUserSettings = async () => {
   const state = useConcursoStore.getState();
-  if (!state.user) return;
+  if (!state.user) return false;
 
   state.setSyncStatus('syncing');
   const userDocRef = doc(db, 'usuarios', state.user.uid);
@@ -248,6 +261,7 @@ export const saveUserSettings = async () => {
       lastUpdated: new Date().toISOString(),
     }, { merge: true });
     state.setSyncStatus('synced');
+    return true;
   } catch (err) {
     console.error("Sync error:", err);
     state.setSyncStatus('error');

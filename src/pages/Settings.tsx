@@ -14,14 +14,30 @@ export default function Settings() {
     user,
     scoringRules, addScoringRule, removeScoringRule, updateScoringRule,
     userProfileScoring, updateUserProfileScoring,
-    notificationSettings, updateNotificationSettings
+    notificationSettings, updateNotificationSettings,
+    syncStatus
   } = useConcursoStore();
+
+  const [initialSettings, setInitialSettings] = useState({
+    scoringRules,
+    userProfileScoring,
+    notificationSettings
+  });
+
+  React.useEffect(() => {
+    if (syncStatus === 'synced') {
+      setInitialSettings({ scoringRules, userProfileScoring, notificationSettings });
+    }
+  }, [syncStatus, scoringRules, userProfileScoring, notificationSettings]);
+
+  const hasChanges = JSON.stringify({ scoringRules, userProfileScoring, notificationSettings }) !== JSON.stringify(initialSettings);
 
   const [activeTab, setActiveTab] = useState<TabType>('perfil');
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleRecalculate = () => {
     setIsRecalculating(true);
@@ -34,14 +50,26 @@ export default function Settings() {
   };
 
   const handleSaveSettings = async () => {
+    if (!user) {
+      setSaveError('Faça login para salvar suas configurações permanentemente.');
+      setTimeout(() => setSaveError(null), 5000);
+      return;
+    }
+
     setIsSaving(true);
+    setSaveError(null);
     try {
-      await saveUserSettings();
-      setShowSaveSuccess(true);
-      setTimeout(() => setShowSaveSuccess(false), 3000);
-      handleRecalculate();
+      const success = await saveUserSettings();
+      if (success) {
+        setInitialSettings({ scoringRules, userProfileScoring, notificationSettings });
+        setShowSaveSuccess(true);
+        setTimeout(() => setShowSaveSuccess(false), 3000);
+        handleRecalculate();
+      }
     } catch (error) {
       console.error("Failed to save settings", error);
+      setSaveError('Erro ao salvar configurações. Tente novamente.');
+      setTimeout(() => setSaveError(null), 5000);
     } finally {
       setIsSaving(false);
     }
@@ -107,39 +135,47 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto px-4 sm:px-0 pb-12">
+    <div className="space-y-6 sm:space-y-8 max-w-4xl -mx-4 sm:mx-auto sm:px-0 pb-12">
       <div className="py-4 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+        <div className="px-4 sm:px-0">
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Configurações</h2>
           <p className="text-slate-500 text-sm sm:text-base font-medium">Personalize suas preferências e regras de pontuação</p>
         </div>
-        <button
-          onClick={handleSaveSettings}
-          disabled={isSaving}
-          className={clsx(
-            "flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed",
-            showSaveSuccess 
-              ? "bg-emerald-500 text-white shadow-emerald-200" 
-              : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100"
+        <div className="flex flex-col gap-2 items-end w-full sm:w-auto px-4 sm:px-0">
+          <button
+            onClick={handleSaveSettings}
+            disabled={isSaving || !hasChanges}
+            className={clsx(
+              "w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed",
+              showSaveSuccess 
+                ? "bg-emerald-500 text-white shadow-emerald-200" 
+                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100"
+            )}
+          >
+            {isSaving ? (
+              <RefreshCw size={20} className="animate-spin" />
+            ) : showSaveSuccess ? (
+              <CheckCircle2 size={20} />
+            ) : (
+              <Save size={20} />
+            )}
+            <span>{isSaving ? 'Salvando...' : showSaveSuccess ? 'Salvo com Sucesso' : 'Salvar Configurações'}</span>
+          </button>
+          {saveError && (
+            <div className="flex items-center space-x-2 text-rose-500 text-xs font-bold animate-in fade-in slide-in-from-top-1">
+              <AlertCircle size={14} />
+              <span>{saveError}</span>
+            </div>
           )}
-        >
-          {isSaving ? (
-            <RefreshCw size={20} className="animate-spin" />
-          ) : showSaveSuccess ? (
-            <CheckCircle2 size={20} />
-          ) : (
-            <Save size={20} />
-          )}
-          <span>{isSaving ? 'Salvando...' : showSaveSuccess ? 'Salvo com Sucesso' : 'Salvar Configurações'}</span>
-        </button>
+        </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-slate-100/50 p-1.5 rounded-2xl flex items-center gap-1">
+      <div className="mx-4 sm:mx-0 bg-slate-100/70 p-1.5 rounded-2xl grid grid-cols-3 gap-1">
         <button
           onClick={() => setActiveTab('perfil')}
           className={clsx(
-            "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+            "flex-1 rounded-xl font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-1 sm:px-4 text-[11px] sm:text-sm",
             activeTab === 'perfil' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
           )}
         >
@@ -149,7 +185,7 @@ export default function Settings() {
         <button
           onClick={() => setActiveTab('pontuacao')}
           className={clsx(
-            "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+            "flex-1 rounded-xl font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-1 sm:px-4 text-[11px] sm:text-sm",
             activeTab === 'pontuacao' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
           )}
         >
@@ -159,7 +195,7 @@ export default function Settings() {
         <button
           onClick={() => setActiveTab('notificacoes')}
           className={clsx(
-            "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+            "flex-1 rounded-xl font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-1 sm:px-4 text-[11px] sm:text-sm",
             activeTab === 'notificacoes' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
           )}
         >
@@ -194,7 +230,7 @@ export default function Settings() {
                   <MapPin size={18} className="text-indigo-500 shrink-0" />
                   <span>Estados (UFs) Desejados</span>
                 </div>
-                <div className="flex flex-wrap gap-2.5">
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
                   {BRAZILIAN_UFS.map(uf => {
                     const isActive = !!(userProfileScoring.ufs_desejadas || {})[uf];
                     return (
@@ -202,7 +238,7 @@ export default function Settings() {
                         key={uf}
                         onClick={() => toggleUf(uf)}
                         className={clsx(
-                          "px-4 py-2.5 rounded-xl text-sm font-bold border transition-all active:scale-95",
+                          "w-full flex items-center justify-center text-center px-1 py-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all active:scale-95",
                           isActive 
                             ? "bg-indigo-100 text-indigo-700 border-indigo-200 shadow-sm" 
                             : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
@@ -221,7 +257,7 @@ export default function Settings() {
                   <Globe size={18} className="text-emerald-500 shrink-0" />
                   <span>Esferas Preferidas</span>
                 </div>
-                <div className="flex flex-wrap gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                   {[...Object.keys(ESFERA_PATTERNS), 'Federal', 'Estadual', 'Municipal'].map(esfera => {
                     const isActive = !!(userProfileScoring.esferas_preferidas || {})[esfera];
                     return (
@@ -229,7 +265,7 @@ export default function Settings() {
                         key={esfera}
                         onClick={() => toggleEsfera(esfera)}
                         className={clsx(
-                          "px-4 py-2.5 rounded-xl text-sm font-bold border transition-all active:scale-95",
+                          "w-full flex items-center justify-center text-center px-2 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold border transition-all active:scale-95",
                           isActive 
                             ? "bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm" 
                             : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
@@ -248,7 +284,7 @@ export default function Settings() {
                   <Layout size={18} className="text-amber-500 shrink-0" />
                   <span>Modalidades Preferidas</span>
                 </div>
-                <div className="flex flex-wrap gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                   {Object.keys(MODALIDADE_PATTERNS).map(modalidade => {
                     const isActive = !!(userProfileScoring.modalidades_preferidas || {})[modalidade];
                     return (
@@ -256,7 +292,7 @@ export default function Settings() {
                         key={modalidade}
                         onClick={() => toggleModalidade(modalidade)}
                         className={clsx(
-                          "px-4 py-2.5 rounded-xl text-sm font-bold border transition-all active:scale-95",
+                          "w-full flex items-center justify-center text-center px-2 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold border transition-all active:scale-95",
                           isActive 
                             ? "bg-amber-100 text-amber-700 border-amber-200 shadow-sm" 
                             : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
@@ -275,7 +311,7 @@ export default function Settings() {
                   <GraduationCap size={18} className="text-blue-500 shrink-0" />
                   <span>Nível de Escolaridade Alvo</span>
                 </div>
-                <div className="flex flex-wrap gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                   {ESCOLARIDADE_OPTIONS.map(escolaridade => {
                     const isActive = !!(userProfileScoring.escolaridades_preferidas || {})[escolaridade];
                     return (
@@ -283,7 +319,7 @@ export default function Settings() {
                         key={escolaridade}
                         onClick={() => toggleEscolaridade(escolaridade)}
                         className={clsx(
-                          "px-4 py-2.5 rounded-xl text-sm font-bold border transition-all active:scale-95",
+                          "w-full flex items-center justify-center text-center px-2 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold border transition-all active:scale-95",
                           isActive 
                             ? "bg-blue-100 text-blue-700 border-blue-200 shadow-sm" 
                             : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"

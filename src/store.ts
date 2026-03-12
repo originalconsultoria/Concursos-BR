@@ -109,11 +109,21 @@ export const useConcursoStore = create<ConcursoStore>()(
       },
       lastSeenExamIds: [],
       syncStatus: 'idle',
-      setUser: (user) => set({ user }),
+      setUser: (user) => set({ 
+        user: user ? {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL
+        } : null 
+      }),
       setSyncStatus: (status) => set({ syncStatus: status }),
       setConcursos: (concursos) => set({ 
         // Filtra silenciosamente qualquer item corrompido que venha do cache ou do banco
-        concursos: concursos.filter(c => c && c.id) 
+        // E garante que sejam objetos planos
+        concursos: concursos
+          .filter(c => c && c.id)
+          .map(c => ({ ...c }))
       }),
       updateConcurso: (id, updates) =>
         set((state) => ({

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Check, X, Search, Filter, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown, ChevronRight, BookOpen, Briefcase, Globe, Layout, ListChecks, Star, MapPin, Trophy, ExternalLink, RefreshCw, Calendar, Trash2 } from 'lucide-react';
 import { useConcursoStore, Concurso } from '../store';
 import { StatusBadge } from '../components/StatusBadge';
+import { PositionsList } from '../components/PositionsList';
 import { calculateScore } from '../utils/scoring';
 import { getEditalStatus, parseNamedLinks } from '../utils/concursoUtils';
 import clsx from 'clsx';
@@ -272,7 +273,7 @@ export default function Opportunities() {
 
   return (
     <div className="space-y-6 pb-20 md:pb-0">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 px-4 md:px-0 pt-4 md:pt-0">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Oportunidades</h2>
           <p className="text-slate-500">Encontre e gerencie concursos públicos.</p>
@@ -289,7 +290,7 @@ export default function Opportunities() {
       </div>
 
       {/* Quick Filter Chips */}
-      <div className="flex overflow-x-auto pb-2 gap-2 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+      <div className="flex overflow-x-auto pb-2 gap-2 no-scrollbar px-4 md:px-0">
         <button
           onClick={() => { 
             const newStatus = statusFilter.includes('Aberto') ? [] : ['Aberto'];
@@ -357,7 +358,7 @@ export default function Opportunities() {
       </div>
 
       {/* BARRA DE AÇÕES (Busca sempre visível, Botão de Filtro apenas no Mobile) */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 px-4 md:px-0">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
           <input 
@@ -430,7 +431,7 @@ export default function Opportunities() {
       </div>
 
       {/* MOBILE: Cards (hidden em md:) */}
-      <div className="md:hidden grid grid-cols-1 gap-4">
+      <div className="md:hidden grid grid-cols-1 gap-4 px-4">
         {concursos.length === 0 ? (
           <div className="col-span-full bg-white p-12 text-center rounded-2xl border border-dashed border-slate-300 text-slate-500">
             Nenhum concurso encontrado. Faça o upload do arquivo CSV.
@@ -577,17 +578,7 @@ export default function Opportunities() {
                         )}
                         <div className="col-span-2">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Cargos</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {c.positions?.split(/[,;]/).map((pos, i) => {
-                              const trimmed = pos.trim();
-                              if (!trimmed) return null;
-                              return (
-                                <span key={i} className="px-2 py-0.5 bg-white text-slate-600 rounded-md text-[9px] font-bold border border-slate-200 shadow-sm">
-                                  {trimmed}
-                                </span>
-                              );
-                            })}
-                          </div>
+                          <PositionsList positions={c.positions} />
                         </div>
                         <div className="col-span-2">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Disciplinas</p>
@@ -845,17 +836,11 @@ export default function Opportunities() {
                                       <Briefcase size={16} className="text-indigo-600" />
                                       Cargos e Oportunidades
                                     </h4>
-                                    <div className="flex flex-wrap gap-2">
-                                      {c.positions?.split(/[,;]/).map((pos, i) => {
-                                        const trimmed = pos.trim();
-                                        if (!trimmed) return null;
-                                        return (
-                                          <span key={i} className="px-2.5 py-1 bg-white text-slate-700 rounded-lg text-[10px] font-bold border border-slate-200 shadow-sm hover:border-indigo-300 transition-colors">
-                                            {trimmed}
-                                          </span>
-                                        );
-                                      })}
-                                    </div>
+                                    <PositionsList 
+                                      positions={c.positions} 
+                                      className="flex flex-wrap gap-2"
+                                      itemClassName="px-2.5 py-1 bg-white text-slate-700 rounded-lg text-[10px] font-bold border border-slate-200 shadow-sm hover:border-indigo-300 transition-colors"
+                                    />
                                   </div>
 
                                   <div className="space-y-4">

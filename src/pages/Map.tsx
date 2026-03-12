@@ -39,23 +39,21 @@ export default function MapView() {
   }, []);
 
   return (
-    <div className="h-full flex flex-col relative -m-4 md:m-0">
-      <div className="absolute top-4 left-4 z-[1000] pointer-events-none md:pointer-events-auto">
-        <div className="bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-white/20 max-w-[200px] hidden md:block">
-          <h2 className="text-lg font-bold text-slate-900">Mapa</h2>
-          <p className="text-xs text-slate-500">Locais de prova dos seus concursos.</p>
-        </div>
-      </div>
+    <div className="h-full flex flex-col max-w-6xl mx-auto w-full p-4 md:p-6">
+      <header className="mb-6">
+        <h2 className="text-3xl font-black text-slate-900 tracking-tight">Mapa</h2>
+        <p className="text-slate-500 font-medium">Locais de prova dos seus concursos.</p>
+      </header>
 
-      <div className="flex-1 bg-slate-100 relative overflow-hidden">
+      <div className="flex-1 bg-slate-100 relative overflow-hidden md:rounded-3xl md:border md:border-slate-200 md:shadow-sm">
         {mappedConcursos.length === 0 && (
           <div className="absolute inset-0 z-[2000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl p-8 max-w-md text-center shadow-2xl">
               <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MapPin size={32} />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Nenhum local mapeado</h3>
-              <p className="text-slate-500 mb-6 text-sm">
+              <h3 className="text-xl font-black text-slate-900 mb-2 tracking-tight">Nenhum local mapeado</h3>
+              <p className="text-slate-500 mb-6 text-sm leading-relaxed">
                 Para visualizar concursos no mapa, vá até a aba <strong>Meus Concursos</strong>, clique em <strong>Editar Detalhes</strong> de um concurso e use o botão <strong>Buscar no Mapa</strong> para definir o local de prova.
               </p>
             </div>
@@ -100,22 +98,22 @@ export default function MapView() {
                   </div>
                   <button 
                     onClick={() => setSelectedConcurso(null)}
-                    className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors"
                   >
                     <X size={20} />
                   </button>
                 </div>
 
                 <div className="space-y-3 mb-4">
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                     <MapPin size={14} className="text-slate-400" />
                     <span className="truncate">{selectedConcurso.exam_location || selectedConcurso.location}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                     <Calendar size={14} className="text-slate-400" />
                     <span>Prova: {selectedConcurso.exam_date || 'Não definida'}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                     <Trophy size={14} className="text-amber-500" />
                     <span>Score: <strong className="text-slate-900">{selectedConcurso.calculatedScore}</strong></span>
                   </div>
@@ -127,7 +125,7 @@ export default function MapView() {
                       href={selectedConcurso.link} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-indigo-100 active:scale-[0.98] transition-all"
+                      className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white py-3 rounded-xl text-xs font-bold shadow-lg shadow-indigo-100 active:scale-[0.98] transition-all"
                     >
                       <ExternalLink size={14} />
                       Ver Edital
@@ -135,7 +133,7 @@ export default function MapView() {
                   )}
                   <button 
                     onClick={() => setSelectedConcurso(null)}
-                    className="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-bold active:scale-[0.98] transition-all"
+                    className="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl text-xs font-bold active:scale-[0.98] transition-all"
                   >
                     Fechar
                   </button>

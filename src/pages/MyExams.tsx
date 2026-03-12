@@ -46,99 +46,100 @@ export default function MyExams() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Meus Concursos</h2>
-          <p className="text-slate-500">Gerencie suas inscrições, favoritos e análise de perfil.</p>
-        </div>
-        <div className="flex bg-slate-100 p-1 rounded-lg overflow-x-auto hide-scrollbar">
-          <button
-            onClick={() => setActiveTab('interested')}
-            className={clsx(
-              "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
-              activeTab === 'interested' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-600 hover:text-slate-900"
-            )}
-          >
-            <Bookmark size={16} />
-            <span>Acompanhamentos</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('favorites')}
-            className={clsx(
-              "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
-              activeTab === 'favorites' ? "bg-white text-amber-500 shadow-sm" : "text-slate-600 hover:text-slate-900"
-            )}
-          >
-            <Star size={16} />
-            <span>Favoritos</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('analysis')}
-            className={clsx(
-              "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
-              activeTab === 'analysis' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-600 hover:text-slate-900"
-            )}
-          >
-            <TrendingUp size={16} />
-            <span>Análise</span>
-          </button>
-        </div>
+    <div className="max-w-5xl mx-auto pt-6 pb-20 md:pb-0">
+      <div className="px-4 md:px-0 mb-6">
+        <h1 className="text-3xl font-black text-slate-900">Meus Concursos</h1>
+        <p className="text-slate-500 font-medium">Acompanhe seus estudos e oportunidades.</p>
       </div>
 
-      {activeTab === 'interested' && (
-        validInterested.length === 0 ? (
-          <div className="bg-white p-12 rounded-xl border border-dashed border-slate-300 text-center">
-            <p className="text-slate-500">Você ainda não marcou nenhum concurso como interessado.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {validInterested.map((c, index) => (
-              <ConcursoCard 
-                key={`${c.id}-${index}`} 
-                c={c} 
-                scoringRules={scoringRules}
-                userProfileScoring={userProfileScoring}
-                editingId={editingId}
-                editForm={editForm}
-                setEditForm={setEditForm}
-                enriching={enriching}
-                handleEdit={handleEdit}
-                handleSave={handleSave}
-                enrichLocation={enrichLocation}
-                toggleFavorite={toggleFavorite}
-                markInterest={markInterest}
-                deleteConcurso={deleteConcurso}
-              />
-            ))}
-          </div>
-        )
-      )}
+      <div className="grid grid-cols-3 gap-2 mx-4 md:mx-0 mb-6 p-1 bg-slate-100/70 rounded-2xl">
+        <button
+          onClick={() => setActiveTab('interested')}
+          className={clsx(
+            "flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-2 py-2 rounded-xl text-[11px] md:text-sm font-medium transition-colors",
+            activeTab === 'interested' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-600 hover:text-slate-900"
+          )}
+        >
+          <Bookmark size={16} />
+          <span>Acompanhamentos</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('favorites')}
+          className={clsx(
+            "flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-2 py-2 rounded-xl text-[11px] md:text-sm font-medium transition-colors",
+            activeTab === 'favorites' ? "bg-white text-amber-500 shadow-sm" : "text-slate-600 hover:text-slate-900"
+          )}
+        >
+          <Star size={16} />
+          <span>Favoritos</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('analysis')}
+          className={clsx(
+            "flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-2 py-2 rounded-xl text-[11px] md:text-sm font-medium transition-colors",
+            activeTab === 'analysis' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-600 hover:text-slate-900"
+          )}
+        >
+          <TrendingUp size={16} />
+          <span>Análise</span>
+        </button>
+      </div>
 
-      {activeTab === 'favorites' && (
-        validFavorites.length === 0 ? (
-          <div className="bg-white p-12 rounded-xl border border-dashed border-slate-300 text-center">
-            <p className="text-slate-500">Você ainda não favoritou nenhum concurso.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {validFavorites.map((c, index) => (
-              <CompactConcursoCard 
-                key={`${c.id}-${index}`} 
-                c={c} 
-                scoringRules={scoringRules}
-                userProfileScoring={userProfileScoring}
-                toggleFavorite={toggleFavorite}
-                deleteConcurso={deleteConcurso}
-              />
-            ))}
-          </div>
-        )
-      )}
+      <div className="px-4 md:px-0">
+        {activeTab === 'interested' && (
+          validInterested.length === 0 ? (
+            <div className="bg-white p-12 rounded-xl border border-dashed border-slate-300 text-center">
+              <p className="text-slate-500">Você ainda não marcou nenhum concurso como interessado.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {validInterested.map((c, index) => (
+                <ConcursoCard 
+                  key={`${c.id}-${index}`} 
+                  c={c} 
+                  scoringRules={scoringRules}
+                  userProfileScoring={userProfileScoring}
+                  editingId={editingId}
+                  editForm={editForm}
+                  setEditForm={setEditForm}
+                  enriching={enriching}
+                  handleEdit={handleEdit}
+                  handleSave={handleSave}
+                  enrichLocation={enrichLocation}
+                  toggleFavorite={toggleFavorite}
+                  markInterest={markInterest}
+                  deleteConcurso={deleteConcurso}
+                />
+              ))}
+            </div>
+          )
+        )}
 
-      {activeTab === 'analysis' && (
-        <Dashboard />
-      )}
+        {activeTab === 'favorites' && (
+          validFavorites.length === 0 ? (
+            <div className="bg-white p-12 rounded-xl border border-dashed border-slate-300 text-center">
+              <p className="text-slate-500">Você ainda não favoritou nenhum concurso.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {validFavorites.map((c, index) => (
+                <CompactConcursoCard 
+                  key={`${c.id}-${index}`} 
+                  c={c} 
+                  scoringRules={scoringRules}
+                  userProfileScoring={userProfileScoring}
+                  toggleFavorite={toggleFavorite}
+                  deleteConcurso={deleteConcurso}
+                />
+              ))}
+            </div>
+          )
+        )}
+
+        {activeTab === 'analysis' && (
+          <Dashboard />
+        )}
+      </div>
     </div>
   );
 }
