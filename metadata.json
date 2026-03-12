@@ -1,0 +1,5 @@
+{
+  "name": "Concursos BR",
+  "description": "Plataforma de acompanhamento de concursos públicos brasileiros com sincronização em tempo real e análise de perfil.",
+  "requestFramePermissions": ["geolocation"]
+}
