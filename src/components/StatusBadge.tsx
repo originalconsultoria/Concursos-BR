@@ -13,13 +13,12 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className }) =
   return (
     <span 
       className={clsx(
-        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ring-4 ring-offset-0 transition-all duration-300 cursor-help",
-        config.className,
+        "inline-flex items-center gap-1 text-[11px] font-medium text-slate-500",
         className
       )}
       title={config.description}
     >
-      <span className={clsx("w-1.5 h-1.5 rounded-full animate-pulse", config.dotClassName)} />
+      <span className={clsx("w-1.5 h-1.5 rounded-full", config.dotClassName)} />
       {config.label}
     </span>
   );

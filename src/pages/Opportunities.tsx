@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Check, X, Search, Filter, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown, ChevronRight, BookOpen, Briefcase, Globe, Layout, ListChecks, Star, MapPin, Trophy, ExternalLink, RefreshCw, Calendar, Trash2 } from 'lucide-react';
+import { Check, X, Search, Filter, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown, ChevronRight, BookOpen, Briefcase, Globe, Layout, ListChecks, Star, MapPin, Trophy, ExternalLink, RefreshCw, Calendar, CalendarDays, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useConcursoStore, Concurso } from '../store';
 import { StatusBadge } from '../components/StatusBadge';
 import { PositionsList } from '../components/PositionsList';
@@ -158,6 +159,14 @@ const FilterModal = ({
   );
 };
 
+const isRelevant = (val: string | undefined | null) => {
+  if (!val) return false;
+  const lower = val.toLowerCase().trim();
+  if (lower === 'n/a' || lower === '-' || lower === 'não informado') return false;
+  if (lower.includes('consultar edital') || lower.includes('a definir')) return false;
+  return true;
+};
+
 export default function Opportunities() {
   const { concursos, scoringRules, userProfileScoring, markInterest, updateConcurso, toggleFavorite, setConcursos } = useConcursoStore();
   const [filter, setFilter] = useState('');
@@ -179,6 +188,19 @@ export default function Opportunities() {
   });
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [animatingRowId, setAnimatingRowId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (expandedRow) {
+      setTimeout(() => {
+        const isMobile = window.innerWidth < 768;
+        const elementId = isMobile ? `mobile-card-${expandedRow}` : `desktop-row-${expandedRow}`;
+        const element = document.getElementById(elementId);
+        if (isMobile && element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
+    }
+  }, [expandedRow]);
   
   // Sorting state
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
@@ -256,14 +278,21 @@ export default function Opportunities() {
     }));
 
     // 2. Sort
-    if (sortConfig) {
-      result.sort((a, b) => {
+    result.sort((a, b) => {
+      const statusA = (a.status && a.status !== 'N/A' ? a.status : getEditalStatus(a.registration_end, a.exam_date)) as string;
+      const statusB = (b.status && b.status !== 'N/A' ? b.status : getEditalStatus(b.registration_end, b.exam_date)) as string;
+
+      // Rule: Encerrado goes to the end
+      if (statusA === 'Encerrado' && statusB !== 'Encerrado') return 1;
+      if (statusA !== 'Encerrado' && statusB === 'Encerrado') return -1;
+
+      if (sortConfig) {
         let valA: any;
         let valB: any;
 
         if (sortConfig.key === 'status') {
-          valA = a.status && a.status !== 'N/A' ? a.status : getEditalStatus(a.registration_end, a.exam_date);
-          valB = b.status && b.status !== 'N/A' ? b.status : getEditalStatus(b.registration_end, b.exam_date);
+          valA = statusA;
+          valB = statusB;
         } else if (sortConfig.key === 'score') {
           valA = a.calculatedScore;
           valB = b.calculatedScore;
@@ -275,11 +304,11 @@ export default function Opportunities() {
         if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
         if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
-      });
-    } else {
-      // Default sort by score descending if no sort config
-      result.sort((a, b) => b.calculatedScore - a.calculatedScore);
-    }
+      } else {
+        // Default sort by score descending if no sort config
+        return b.calculatedScore - a.calculatedScore;
+      }
+    });
 
     return result;
   }, [concursos, filter, appliedFilters, sortConfig, getEditalStatus, scoringRules, userProfileScoring]);
@@ -303,7 +332,7 @@ export default function Opportunities() {
     <div className="space-y-6 pb-20 md:pb-0">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 px-4 md:px-0 pt-4 md:pt-0">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Oportunidades</h2>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Oportunidades</h2>
           <p className="text-slate-500">Encontre e gerencie concursos públicos.</p>
         </div>
       </div>
@@ -376,167 +405,210 @@ export default function Opportunities() {
               const isExpanded = expandedRow === c.id;
               
               return (
-                <div 
+                <motion.div 
+                  id={`mobile-card-${c.id}`}
+                  layout
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
                   key={`${c.id}-${index}`}
+                  onClick={() => {
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    setExpandedRow(isExpanded ? null : c.id);
+                  }}
                   className={clsx(
-                    "bg-white rounded-2xl border transition-all duration-300 overflow-hidden flex flex-col",
-                    c.interest_status === 'interested' ? "border-indigo-200 shadow-indigo-100/50 shadow-lg" : "border-slate-100 shadow-sm",
-                    c.interest_status === 'ignored' && "opacity-60 grayscale",
-                    isExpanded && "ring-2 ring-indigo-500/20"
+                    "bg-white rounded-2xl border transition-colors duration-200 overflow-hidden flex flex-col relative cursor-pointer",
+                    c.interest_status === 'interested' ? "border-indigo-500 ring-1 ring-indigo-500 shadow-md" : "border-slate-200 shadow-sm",
+                    (c.interest_status === 'ignored' || status === 'Encerrado') && "opacity-60 grayscale",
+                    isExpanded && "border-slate-300 shadow-md"
                   )}
                 >
-                  <div className="p-4 flex flex-col flex-1">
-                    <div className="flex justify-between items-start gap-2 mb-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 uppercase font-bold">{c.location}</span>
-                          <span className="text-[10px] text-slate-400 font-medium truncate">{c.source}</span>
+                  <div className="p-3 flex flex-col gap-1.5">
+                    {/* Header row: Title + Score + Favorite */}
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-2 flex-1">
+                        {c.institution}
+                      </h3>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <div className={clsx(
+                          "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold",
+                          c.calculatedScore < 30 ? "bg-rose-50 text-rose-700" :
+                          c.calculatedScore < 70 ? "bg-amber-50 text-amber-700" :
+                          "bg-emerald-50 text-emerald-700"
+                        )}>
+                          <Trophy size={10} />
+                          <span>{c.calculatedScore}</span>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-base font-bold text-slate-900 leading-tight line-clamp-2" title={c.institution}>
-                            {c.institution}
-                          </h3>
-                          {c.board && c.board !== 'N/A' && (
-                            <span className="text-indigo-600 font-bold text-[9px] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 flex-shrink-0 uppercase tracking-tight">
-                              {c.board}
-                            </span>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (navigator.vibrate) navigator.vibrate(50);
+                            toggleFavorite(c);
+                          }}
+                          className={clsx(
+                            "p-1 rounded-full transition-colors -mr-1 -mt-1",
+                            c.is_favorite ? "text-amber-500 bg-amber-50" : "text-slate-300 hover:text-amber-500 hover:bg-slate-50"
                           )}
+                        >
+                          <Star size={16} fill={c.is_favorite ? "currentColor" : "none"} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Location, Board & Status */}
+                    <div className="flex items-center mt-0.5 gap-2">
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium truncate pr-2">
+                        <span className="flex items-center gap-1 flex-shrink-0"><MapPin size={10} /> {c.location}</span>
+                        {c.board && c.board !== 'N/A' && (
+                          <>
+                            <span className="text-slate-300 flex-shrink-0">•</span>
+                            <span className="truncate">{c.board}</span>
+                          </>
+                        )}
+                      </div>
+                      <StatusBadge status={status as any} />
+                    </div>
+
+                    {/* Key Stats & Actions */}
+                    <div className="flex items-center justify-between pt-2 mt-1 border-t border-slate-100">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="flex flex-col flex-shrink-0 whitespace-nowrap">
+                          <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider leading-none mb-0.5">Vagas</span>
+                          <span className="text-[13px] font-bold text-slate-700 leading-none">{c.vacancies}</span>
+                        </div>
+                        <div className="w-px h-5 bg-slate-200"></div>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider leading-none mb-0.5">Salário</span>
+                          <span className={clsx(
+                            "text-[13px] font-bold leading-none truncate",
+                            (!c.salary || c.salary === 'N/A' || c.salary.toLowerCase().includes('cadastro')) ? "text-slate-400" : "text-emerald-600"
+                          )}>
+                            {c.salary && c.salary !== 'N/A' ? c.salary : 'N/A'}
+                          </span>
                         </div>
                       </div>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(c);
-                        }}
-                        className={clsx(
-                          "flex-shrink-0 p-1 transition-colors",
-                          c.is_favorite ? "text-amber-400" : "text-slate-300 hover:text-amber-400"
-                        )}
-                      >
-                        <Star size={20} fill={c.is_favorite ? "currentColor" : "none"} />
-                      </button>
-                    </div>
 
-                    <div className="flex flex-wrap items-center gap-2 mb-4">
-                      <StatusBadge status={status as any} />
-                      <div className={clsx(
-                        "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-sm",
-                        c.calculatedScore < 30 ? "bg-rose-100/50 text-rose-800 border-rose-200" :
-                        c.calculatedScore < 70 ? "bg-amber-100/50 text-amber-800 border-amber-200" :
-                        "bg-emerald-100/50 text-emerald-800 border-emerald-200"
-                      )}>
-                        <Trophy size={12} className={clsx(
-                          c.calculatedScore < 30 ? "text-rose-600" :
-                          c.calculatedScore < 70 ? "text-amber-600" :
-                          "text-emerald-600"
-                        )} />
-                        <span>Score: {c.calculatedScore}</span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 py-3 border-y border-slate-50 mb-4">
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Vagas</p>
-                        <p className="text-sm font-bold text-slate-700 truncate">{c.vacancies}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Salário</p>
-                        <p className="text-sm font-bold text-indigo-600 truncate">{c.salary}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-auto flex flex-col gap-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1">
-                          {c.interest_status === 'interested' ? (
+                      {/* Actions */}
+                      <div className="flex items-center gap-1">
+                        {status !== 'Encerrado' && (
+                          c.interest_status === 'interested' ? (
                             <button 
-                              onClick={() => handleMarkInterest(c.id, 'none')}
-                              className="flex items-center gap-1 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm"
+                              onClick={(e) => { e.stopPropagation(); if (navigator.vibrate) navigator.vibrate(50); handleMarkInterest(c.id, 'none'); }}
+                              className="px-3 py-1 flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 rounded-full transition-colors"
                             >
-                              <Check size={14} />
-                              <span>Interessado</span>
+                              <Check size={12} />
+                              <span>Interesse</span>
                             </button>
                           ) : c.interest_status === 'ignored' ? (
                             <button 
-                              onClick={() => handleMarkInterest(c.id, 'none')}
-                              className="flex items-center gap-1 bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold"
+                              onClick={(e) => { e.stopPropagation(); if (navigator.vibrate) navigator.vibrate(50); handleMarkInterest(c.id, 'none'); }}
+                              className="px-3 py-1 flex items-center gap-1 text-[11px] font-bold text-slate-600 bg-slate-100 rounded-full transition-colors"
                             >
-                              <RefreshCw size={14} />
+                              <RefreshCw size={12} />
                               <span>Restaurar</span>
                             </button>
                           ) : (
-                            <div className="flex items-center gap-1">
+                            <>
                               <button 
-                                onClick={() => handleMarkInterest(c.id, 'interested')}
-                                className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors"
+                                onClick={(e) => { e.stopPropagation(); if (navigator.vibrate) navigator.vibrate(50); handleMarkInterest(c.id, 'interested'); }}
+                                className="px-3 py-1 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-full transition-colors"
                               >
                                 Interesse
                               </button>
                               <button 
-                                onClick={() => handleMarkInterest(c.id, 'ignored')}
-                                className="p-2 text-slate-400 hover:text-rose-500 transition-colors"
+                                onClick={(e) => { e.stopPropagation(); if (navigator.vibrate) navigator.vibrate(50); handleMarkInterest(c.id, 'ignored'); }}
+                                className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors"
                                 title="Ignorar"
                               >
-                                <X size={16} />
+                                <X size={14} />
                               </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => setExpandedRow(isExpanded ? null : c.id)}
-                        className={clsx(
-                          "w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all",
-                          isExpanded
-                            ? "bg-slate-100 text-slate-700"
-                            : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                            </>
+                          )
                         )}
-                      >
-                        {isExpanded ? "Ocultar detalhes" : "Ver detalhes"}
-                        <ChevronDown size={14} className={clsx("transition-transform", isExpanded && "rotate-180")} />
-                      </button>
+                      </div>
                     </div>
                   </div>
 
-                  {isExpanded && (
-                    <div className="p-4 bg-slate-50 border-t border-slate-100 space-y-4">
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Vagas</p>
-                            <p className="text-xs text-slate-700 font-medium">{c.vacancies}</p>
+                  {/* Expanded Details */}
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-3 pb-4 pt-3 bg-slate-50 shadow-inner border-t border-slate-200 space-y-4" onClick={(e) => e.stopPropagation()}>
+                          {/* Módulo A: Grid de Metadados */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* Esfera - Row 1 */}
+                        <div className="col-span-2 bg-white rounded-xl border border-slate-200 p-2.5 flex flex-col gap-1 shadow-sm">
+                          <div className="flex items-center gap-1.5 text-slate-400">
+                            <Globe size={12} />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Esfera</span>
                           </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Esfera</p>
-                            <p className="text-xs text-slate-700 font-medium">{c.esfera}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Inscrições até</p>
-                            <p className="text-xs text-slate-700 font-medium">{c.registration_end}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Prova</p>
-                            <p className="text-xs text-slate-700 font-medium">{c.exam_date}</p>
-                          </div>
+                          <span className="text-xs font-bold text-slate-700">{c.esfera}</span>
                         </div>
-
-                        {c.etapas && (
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Etapas</p>
-                            <p className="text-xs text-slate-700 font-medium">{c.etapas}</p>
+                        
+                        {/* Inscrições até - Row 2 */}
+                        <div className="bg-white rounded-xl border border-slate-200 p-2.5 flex flex-col gap-1 shadow-sm">
+                          <div className="flex items-center gap-1.5 text-rose-500">
+                            <Calendar size={12} />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Inscrições até</span>
                           </div>
-                        )}
-
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Cargos</p>
-                          <PositionsList positions={c.positions} />
+                          <span className="text-xs font-bold text-slate-700">{c.registration_end}</span>
                         </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Disciplinas</p>
-                          <p className="text-xs text-slate-700 font-medium line-clamp-3">{c.subjects}</p>
+                        
+                        {/* Data da Prova - Row 2 */}
+                        <div className="bg-white rounded-xl border border-slate-200 p-2.5 flex flex-col gap-1 shadow-sm">
+                          <div className="flex items-center gap-1.5 text-blue-500">
+                            <CalendarDays size={12} />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Data da Prova</span>
+                          </div>
+                          <span className="text-xs font-bold text-slate-700">{c.exam_date}</span>
+                        </div>
+                        
+                        {/* Novo Bloco: Vagas e Remuneração - Row 3 */}
+                        <div className="col-span-2 bg-white rounded-xl border border-slate-200 p-3 flex flex-col gap-3 shadow-sm">
+                          <div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Vagas Ofertadas</span>
+                            <p className="text-xs font-bold text-slate-700 leading-relaxed">{c.vacancies}</p>
+                          </div>
+                          <div className="border-t border-slate-100 pt-3">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Remuneração</span>
+                            <p className="text-xs font-bold text-emerald-600 leading-relaxed">{c.salary && c.salary !== 'N/A' ? c.salary : 'A definir'}</p>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-2">
+
+                      {/* Módulo B: Smart Hiding (Etapas e Disciplinas) */}
+                      {isRelevant(c.etapas) && (
+                        <div className="px-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Etapas</span>
+                          <p className="text-xs text-slate-600 font-medium leading-relaxed">{c.etapas}</p>
+                        </div>
+                      )}
+
+                      {isRelevant(c.subjects) && (
+                        <div className="px-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Disciplinas</span>
+                          <p className="text-xs text-slate-600 font-medium leading-relaxed line-clamp-3">{c.subjects}</p>
+                        </div>
+                      )}
+
+                      {/* Módulo C: Paddock de Cargos */}
+                      {c.positions && c.positions.length > 0 && isRelevant(c.positions[0]) && (
+                        <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-sm">
+                          <div className="flex items-center gap-1.5 text-slate-700 mb-2.5">
+                            <Briefcase size={14} />
+                            <span className="text-[11px] font-bold uppercase tracking-wider">Cargos Disponíveis</span>
+                          </div>
+                          <PositionsList positions={c.positions} />
+                        </div>
+                      )}
+
+                      {/* Módulo D: Zona de Ação */}
+                      <div className="flex flex-col gap-2 pt-1">
                         {parseNamedLinks(c.Link_Edital, 'Ver Edital').map((link, idx) => (
                           <a 
                             key={`edital-${idx}`}
@@ -544,7 +616,7 @@ export default function Opportunities() {
                             target="_blank" 
                             rel="noopener noreferrer" 
                             referrerPolicy="no-referrer"
-                            className="flex items-center justify-center gap-2 w-full bg-white border border-slate-200 py-2 rounded-lg text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            className="flex items-center justify-center gap-2 w-full bg-white border border-slate-200 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
                           >
                             <ExternalLink size={14} />
                             {link.name}
@@ -557,7 +629,7 @@ export default function Opportunities() {
                             target="_blank" 
                             rel="noopener noreferrer" 
                             referrerPolicy="no-referrer"
-                            className="flex items-center justify-center gap-2 w-full bg-indigo-600 py-2 rounded-lg text-xs font-bold text-white hover:bg-indigo-700 transition-colors"
+                            className="flex items-center justify-center gap-2 w-full bg-slate-900 py-2.5 rounded-xl text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-sm"
                           >
                             <Check size={14} />
                             {link.name}
@@ -569,16 +641,18 @@ export default function Opportunities() {
                             target="_blank" 
                             rel="noopener noreferrer" 
                             referrerPolicy="no-referrer"
-                            className="flex items-center justify-center gap-2 w-full bg-white border border-slate-200 py-2 rounded-lg text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            className="flex items-center justify-center gap-2 w-full bg-white border border-slate-200 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
                           >
                             <ExternalLink size={14} />
                             Acessar Edital
                           </a>
                         )}
                       </div>
-                    </div>
-                  )}
-                </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
               );
             })}
           </>
@@ -621,33 +695,38 @@ export default function Opportunities() {
                     return (
                       <React.Fragment key={`${c.id}-${index}`}>
                         <tr 
+                          id={`desktop-row-${c.id}`}
                           className={clsx(
-                            "transition-colors cursor-pointer",
+                            "transition-colors cursor-pointer group",
                             c.interest_status === 'interested' ? "bg-indigo-50/30" : 
                             c.interest_status === 'ignored' ? "opacity-50 grayscale" : "bg-white",
                             "hover:bg-slate-50"
                           )}
-                          onClick={() => setExpandedRow(isExpanded ? null : c.id)}
+                          onClick={() => {
+                            if (navigator.vibrate) navigator.vibrate(50);
+                            setExpandedRow(isExpanded ? null : c.id);
+                          }}
                         >
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 w-10">
                             <div className={clsx(
-                              "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-                              isExpanded ? "bg-indigo-50 text-indigo-600" : "bg-slate-50 text-slate-400"
+                              "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200",
+                              isExpanded ? "bg-indigo-50 text-indigo-600 rotate-90" : "text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600"
                             )}>
-                              {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                              <ChevronRight size={18} />
                             </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center space-x-3">
                               <div className="min-w-0">
-                                <div className="flex items-center gap-2 mb-0.5">
-                                  <div className="font-bold text-slate-900 truncate text-sm">{c.institution}</div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-bold flex-shrink-0 uppercase">{c.location}</span>
-                                    <span className="text-[10px] text-slate-400 font-medium truncate max-w-[100px]">
-                                      {c.board && c.board !== 'N/A' ? c.board : 'Banca a definir'}
-                                    </span>
-                                  </div>
+                                <div className="font-black text-slate-900 truncate text-base tracking-tight mb-0.5">{c.institution}</div>
+                                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium truncate mb-1">
+                                  <span className="flex items-center gap-1 flex-shrink-0"><MapPin size={10} /> {c.location}</span>
+                                  {c.board && c.board !== 'N/A' && (
+                                    <>
+                                      <span className="text-slate-300 flex-shrink-0">•</span>
+                                      <span className="truncate">{c.board}</span>
+                                    </>
+                                  )}
                                 </div>
                                 <div className="text-emerald-600 font-semibold text-xs">
                                   {c.salary && c.salary !== 'N/A' ? c.salary : 'Consulte o edital'}
@@ -684,7 +763,7 @@ export default function Opportunities() {
                               )}
                               
                               <button 
-                                onClick={() => handleMarkInterest(c.id, c.interest_status === 'interested' ? 'none' : 'interested')}
+                                onClick={() => { if (navigator.vibrate) navigator.vibrate(50); handleMarkInterest(c.id, c.interest_status === 'interested' ? 'none' : 'interested'); }}
                                 className={clsx(
                                   "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-sm",
                                   c.interest_status === 'interested' 
@@ -697,7 +776,7 @@ export default function Opportunities() {
                               </button>
                               
                               <button 
-                                onClick={() => handleMarkInterest(c.id, c.interest_status === 'ignored' ? 'none' : 'ignored')}
+                                onClick={() => { if (navigator.vibrate) navigator.vibrate(50); handleMarkInterest(c.id, c.interest_status === 'ignored' ? 'none' : 'ignored'); }}
                                 className={clsx(
                                   "p-2 rounded-lg transition-all",
                                   c.interest_status === 'ignored' ? "text-rose-600" : "text-slate-400 hover:text-rose-500 hover:bg-rose-50"
@@ -709,109 +788,135 @@ export default function Opportunities() {
                             </div>
                           </td>
                         </tr>
-                        {isExpanded && (
-                          <tr className="bg-slate-50/50">
-                            <td colSpan={6} className="p-6">
-                              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                {/* Informações Gerais - Bento Style */}
-                                <div className="lg:col-span-1 space-y-4">
-                                  <h4 className="font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
-                                    <Layout size={16} className="text-indigo-600" />
-                                    Informações Gerais
-                                  </h4>
-                                  <div className="grid grid-cols-2 gap-3">
-                                    <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 shadow-sm col-span-2">
-                                      <p className="text-indigo-400 font-bold text-[9px] uppercase tracking-wider mb-1">Órgão / UF / Banca</p>
-                                      <p className="font-bold text-slate-900 text-sm">
-                                        {c.institution} <span className="text-indigo-300 mx-1">|</span> {c.location} <span className="text-indigo-300 mx-1">|</span> {c.board}
-                                      </p>
-                                    </div>
-                                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                                      <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider mb-1">Esfera</p>
-                                      <p className="font-semibold text-slate-700 text-xs">{c.esfera}</p>
-                                    </div>
-                                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                                      <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider mb-1">Modalidade</p>
-                                      <p className="font-semibold text-slate-700 text-xs">{c.modalidade}</p>
-                                    </div>
-                                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                                      <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider mb-1">Vagas</p>
-                                      <p className="font-semibold text-slate-700 text-xs">{c.vacancies}</p>
-                                    </div>
-                                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                                      <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider mb-1">Inscrições até</p>
-                                      <p className="font-semibold text-slate-700 text-xs">{c.registration_end}</p>
-                                    </div>
-                                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                                      <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider mb-1">Data da Prova</p>
-                                      <p className="font-semibold text-slate-700 text-xs">{c.exam_date}</p>
-                                    </div>
-                                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                                      <p className="text-slate-400 font-bold text-[9px] uppercase tracking-wider mb-1">Fonte</p>
-                                      <p className="font-semibold text-slate-500 text-xs">{c.source}</p>
-                                    </div>
-                                    
-                                    {/* Novos Links */}
-                                    {parseNamedLinks(c.Link_Edital, 'Link para o Edital').map((link, idx) => (
-                                      <div key={`edital-dt-${idx}`} className="col-span-2">
-                                        <a 
-                                          href={link.url} 
-                                          target="_blank" 
-                                          rel="noopener noreferrer" 
-                                          referrerPolicy="no-referrer"
-                                          className="flex items-center justify-center gap-2 w-full bg-white border border-slate-200 py-2.5 rounded-xl text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm"
-                                        >
-                                          <ExternalLink size={14} />
-                                          {link.name}
-                                        </a>
-                                      </div>
-                                    ))}
-                                    {parseNamedLinks(c.Link_Inscricao, 'Página de Inscrição').map((link, idx) => (
-                                      <div key={`inscricao-dt-${idx}`} className="col-span-2">
-                                        <a 
-                                          href={link.url} 
-                                          target="_blank" 
-                                          rel="noopener noreferrer" 
-                                          referrerPolicy="no-referrer"
-                                          className="flex items-center justify-center gap-2 w-full bg-indigo-600 py-2.5 rounded-xl text-xs font-bold text-white hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
-                                        >
-                                          <Check size={14} />
-                                          {link.name}
-                                        </a>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
+                        <AnimatePresence initial={false}>
+                          {isExpanded && (
+                            <tr className="bg-slate-50/50">
+                              <td colSpan={6} className="p-0">
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="p-6 bg-slate-50 border-t border-slate-200">
+                                    <div className="max-w-5xl space-y-6">
+                                      {/* Módulo A: Grid de Metadados */}
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {/* Esfera */}
+                                        <div className="bg-white rounded-xl border border-slate-200 p-3 flex flex-col gap-1.5 shadow-sm">
+                                          <div className="flex items-center gap-1.5 text-slate-400">
+                                            <Globe size={14} />
+                                            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Esfera</span>
+                                          </div>
+                                          <span className="text-sm font-medium text-slate-700">{c.esfera}</span>
+                                        </div>
+                                        
+                                        {/* Inscrições até */}
+                                        <div className="bg-white rounded-xl border border-slate-200 p-3 flex flex-col gap-1.5 shadow-sm">
+                                          <div className="flex items-center gap-1.5 text-rose-500">
+                                            <Calendar size={14} />
+                                            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Inscrições até</span>
+                                          </div>
+                                          <span className="text-sm font-medium text-slate-700">{c.registration_end}</span>
+                                        </div>
+                                        
+                                        {/* Data da Prova */}
+                                        <div className="bg-white rounded-xl border border-slate-200 p-3 flex flex-col gap-1.5 shadow-sm">
+                                          <div className="flex items-center gap-1.5 text-blue-500">
+                                            <CalendarDays size={14} />
+                                            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Data da Prova</span>
+                                          </div>
+                                          <span className="text-sm font-medium text-slate-700">{c.exam_date}</span>
+                                        </div>
 
-                                {/* Cargos e Disciplinas */}
-                                <div className="lg:col-span-2 space-y-6">
-                                  <div className="space-y-4">
-                                    <h4 className="font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
-                                      <Briefcase size={16} className="text-indigo-600" />
-                                      Cargos e Oportunidades
-                                    </h4>
-                                    <PositionsList 
-                                      positions={c.positions} 
-                                      className="flex flex-wrap gap-2"
-                                      itemClassName="px-2.5 py-1 bg-white text-slate-700 rounded-lg text-[10px] font-bold border border-slate-200 shadow-sm hover:border-indigo-300 transition-colors"
-                                    />
-                                  </div>
+                                        {/* Vagas */}
+                                        <div className="bg-white rounded-xl border border-slate-200 p-3 flex flex-col gap-1.5 shadow-sm">
+                                          <div className="flex items-center gap-1.5 text-slate-400">
+                                            <Briefcase size={14} />
+                                            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Vagas Ofertadas</span>
+                                          </div>
+                                          <span className="text-sm font-medium text-slate-700">{c.vacancies}</span>
+                                        </div>
+                                      </div>
 
-                                  <div className="space-y-4">
-                                    <h4 className="font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
-                                      <BookOpen size={16} className="text-indigo-600" />
-                                      Conteúdo Programático / Disciplinas
-                                    </h4>
-                                    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                                      <p className="text-slate-600 text-sm whitespace-pre-wrap leading-relaxed">{c.subjects}</p>
+                                      {/* Módulo B: Smart Hiding (Etapas e Disciplinas) */}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {isRelevant(c.etapas) && (
+                                          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Etapas</span>
+                                            <p className="text-sm text-slate-600 font-medium leading-relaxed">{c.etapas}</p>
+                                          </div>
+                                        )}
+
+                                        {isRelevant(c.subjects) && (
+                                          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Disciplinas</span>
+                                            <p className="text-sm text-slate-600 font-medium leading-relaxed whitespace-pre-wrap">{c.subjects}</p>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Módulo C: Paddock de Cargos */}
+                                      {c.positions && c.positions.length > 0 && isRelevant(c.positions[0]) && (
+                                        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                                          <div className="flex items-center gap-1.5 text-slate-700 mb-3">
+                                            <Briefcase size={16} />
+                                            <span className="text-sm font-semibold uppercase tracking-wider">Cargos Disponíveis</span>
+                                          </div>
+                                          <PositionsList positions={c.positions} />
+                                        </div>
+                                      )}
+
+                                      {/* Módulo D: Zona de Ação */}
+                                      <div className="flex flex-wrap gap-3 pt-2">
+                                        {parseNamedLinks(c.Link_Edital, 'Ver Edital').map((link, idx) => (
+                                          <a 
+                                            key={`edital-dt-${idx}`}
+                                            href={link.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            referrerPolicy="no-referrer"
+                                            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm max-w-md w-full sm:w-auto"
+                                          >
+                                            <ExternalLink size={16} />
+                                            {link.name}
+                                          </a>
+                                        ))}
+                                        {parseNamedLinks(c.Link_Inscricao, 'Página de Inscrição').map((link, idx) => (
+                                          <a 
+                                            key={`inscricao-dt-${idx}`}
+                                            href={link.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            referrerPolicy="no-referrer"
+                                            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-slate-900 rounded-xl text-sm font-medium text-white hover:bg-slate-800 transition-colors shadow-sm max-w-md w-full sm:w-auto"
+                                          >
+                                            <Check size={16} />
+                                            {link.name}
+                                          </a>
+                                        ))}
+                                        {parseNamedLinks(c.Link_Edital, '').length === 0 && parseNamedLinks(c.Link_Inscricao, '').length === 0 && c.link && c.link !== 'N/A' && (
+                                          <a 
+                                            href={c.link} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            referrerPolicy="no-referrer"
+                                            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm max-w-md w-full sm:w-auto"
+                                          >
+                                            <ExternalLink size={16} />
+                                            Acessar Edital
+                                          </a>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
+                          </motion.div>
+                        </td>
+                      </tr>
+                    )}
+                  </AnimatePresence>
+                </React.Fragment>
                     );
                   })}
                 </>

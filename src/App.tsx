@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Map as MapIcon, Settings as SettingsIcon, Bookmark, User as UserIcon, Cloud, CloudOff, RefreshCw, CheckCircle2 } from 'lucide-react';
 import clsx from 'clsx';
 import Opportunities from './pages/Opportunities';
