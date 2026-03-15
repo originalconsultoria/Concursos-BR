@@ -669,23 +669,29 @@ export default function Opportunities() {
                 <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('institution')}>
                   <div className="flex items-center uppercase text-[11px] tracking-wider">Órgão / Instituição <SortIcon column="institution" /></div>
                 </th>
-                <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('score')}>
-                  <div className="flex items-center uppercase text-[11px] tracking-wider">Pontuação <SortIcon column="score" /></div>
+                <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('vacancies')}>
+                  <div className="flex items-center uppercase text-[11px] tracking-wider">Vagas <SortIcon column="vacancies" /></div>
                 </th>
-                <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('status')}>
-                  <div className="flex items-center uppercase text-[11px] tracking-wider">Status <SortIcon column="status" /></div>
+                <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('salary')}>
+                  <div className="flex items-center uppercase text-[11px] tracking-wider">Salário <SortIcon column="salary" /></div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('registration_end')}>
+                  <div className="flex items-center uppercase text-[11px] tracking-wider">Inscrições <SortIcon column="registration_end" /></div>
                 </th>
                 <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('exam_date')}>
                   <div className="flex items-center uppercase text-[11px] tracking-wider">Data Prova <SortIcon column="exam_date" /></div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('score')}>
+                  <div className="flex items-center uppercase text-[11px] tracking-wider">Pontuação <SortIcon column="score" /></div>
                 </th>
                 <th className="px-6 py-4 text-right uppercase text-[11px] tracking-wider">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {concursos.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">Nenhum concurso encontrado.</td></tr>
+                <tr><td colSpan={8} className="px-6 py-8 text-center text-slate-500">Nenhum concurso encontrado.</td></tr>
               ) : processedConcursos.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">Nenhum resultado para a busca.</td></tr>
+                <tr><td colSpan={8} className="px-6 py-8 text-center text-slate-500">Nenhum resultado para a busca.</td></tr>
               ) : (
                 <>
                   {visibleConcursos.map((c, index) => {
@@ -718,8 +724,8 @@ export default function Opportunities() {
                           <td className="px-6 py-4">
                             <div className="flex items-center space-x-3">
                               <div className="min-w-0">
-                                <div className="font-black text-slate-900 truncate text-base tracking-tight mb-0.5">{c.institution}</div>
-                                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium truncate mb-1">
+                                <div className="font-semibold text-slate-700 truncate text-base tracking-tight mb-0.5">{c.institution}</div>
+                                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium truncate">
                                   <span className="flex items-center gap-1 flex-shrink-0"><MapPin size={10} /> {c.location}</span>
                                   {c.board && c.board !== 'N/A' && (
                                     <>
@@ -727,11 +733,30 @@ export default function Opportunities() {
                                       <span className="truncate">{c.board}</span>
                                     </>
                                   )}
-                                </div>
-                                <div className="text-emerald-600 font-semibold text-xs">
-                                  {c.salary && c.salary !== 'N/A' ? c.salary : 'Consulte o edital'}
+                                  <span className="text-slate-300 flex-shrink-0">•</span>
+                                  <StatusBadge status={status as any} />
                                 </div>
                               </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap font-semibold text-slate-700">
+                            {c.vacancies}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className={clsx(
+                              "text-emerald-600 font-semibold truncate max-w-[120px]",
+                              (!c.salary || c.salary === 'N/A' || c.salary.toLowerCase().includes('cadastro')) && "text-slate-400"
+                            )}>
+                              {c.salary && c.salary !== 'N/A' ? c.salary : 'N/A'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-slate-500 whitespace-nowrap">
+                            {c.registration_end && c.registration_end !== 'N/A' ? c.registration_end : '-'}
+                          </td>
+                          <td className="px-6 py-4 text-slate-500 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <Calendar size={14} className="text-slate-400" />
+                              <span className="font-medium">{c.exam_date && c.exam_date !== 'N/A' ? c.exam_date : 'Consultar'}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -743,15 +768,6 @@ export default function Opportunities() {
                             )}>
                               <Trophy size={16} />
                               <span className="text-base">{c.calculatedScore}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <StatusBadge status={status as any} />
-                          </td>
-                          <td className="px-6 py-4 text-slate-500">
-                            <div className="flex items-center gap-2">
-                              <Calendar size={14} className="text-slate-400" />
-                              <span className="font-medium">{c.exam_date && c.exam_date !== 'N/A' ? c.exam_date : 'Consultar Edital'}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
@@ -791,7 +807,7 @@ export default function Opportunities() {
                         <AnimatePresence initial={false}>
                           {isExpanded && (
                             <tr className="bg-slate-50/50">
-                              <td colSpan={6} className="p-0">
+                              <td colSpan={8} className="p-0">
                                 <motion.div
                                   initial={{ height: 0, opacity: 0 }}
                                   animate={{ height: "auto", opacity: 1 }}
@@ -800,8 +816,8 @@ export default function Opportunities() {
                                   className="overflow-hidden"
                                 >
                                   <div className="p-6 bg-slate-50 border-t border-slate-200">
-                                    <div className="max-w-5xl space-y-6">
-                                      {/* Módulo A: Grid de Metadados */}
+                                    <div className="max-w-6xl space-y-6">
+                                      {/* Módulo A: Grid de Metadados (Reduzido) */}
                                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         {/* Esfera */}
                                         <div className="bg-white rounded-xl border border-slate-200 p-3 flex flex-col gap-1.5 shadow-sm">
@@ -812,61 +828,48 @@ export default function Opportunities() {
                                           <span className="text-sm font-medium text-slate-700">{c.esfera}</span>
                                         </div>
                                         
-                                        {/* Inscrições até */}
+                                        {/* Modalidade */}
                                         <div className="bg-white rounded-xl border border-slate-200 p-3 flex flex-col gap-1.5 shadow-sm">
-                                          <div className="flex items-center gap-1.5 text-rose-500">
-                                            <Calendar size={14} />
-                                            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Inscrições até</span>
+                                          <div className="flex items-center gap-1.5 text-indigo-500">
+                                            <Layout size={14} />
+                                            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Modalidade</span>
                                           </div>
-                                          <span className="text-sm font-medium text-slate-700">{c.registration_end}</span>
-                                        </div>
-                                        
-                                        {/* Data da Prova */}
-                                        <div className="bg-white rounded-xl border border-slate-200 p-3 flex flex-col gap-1.5 shadow-sm">
-                                          <div className="flex items-center gap-1.5 text-blue-500">
-                                            <CalendarDays size={14} />
-                                            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Data da Prova</span>
-                                          </div>
-                                          <span className="text-sm font-medium text-slate-700">{c.exam_date}</span>
-                                        </div>
-
-                                        {/* Vagas */}
-                                        <div className="bg-white rounded-xl border border-slate-200 p-3 flex flex-col gap-1.5 shadow-sm">
-                                          <div className="flex items-center gap-1.5 text-slate-400">
-                                            <Briefcase size={14} />
-                                            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Vagas Ofertadas</span>
-                                          </div>
-                                          <span className="text-sm font-medium text-slate-700">{c.vacancies}</span>
+                                          <span className="text-sm font-medium text-slate-700">{c.modalidade || 'N/A'}</span>
                                         </div>
                                       </div>
 
-                                      {/* Módulo B: Smart Hiding (Etapas e Disciplinas) */}
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {isRelevant(c.etapas) && (
-                                          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Etapas</span>
-                                            <p className="text-sm text-slate-600 font-medium leading-relaxed">{c.etapas}</p>
+                                      {/* Grid Lado a Lado: Cargos vs Disciplinas/Etapas */}
+                                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        {/* Módulo C: Paddock de Cargos */}
+                                        {c.positions && c.positions.length > 0 && isRelevant(c.positions[0]) && (
+                                          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col">
+                                            <div className="flex items-center gap-1.5 text-slate-700 mb-3">
+                                              <Briefcase size={16} />
+                                              <span className="text-sm font-semibold uppercase tracking-wider">Cargos Disponíveis</span>
+                                            </div>
+                                            <div className="flex-1">
+                                              <PositionsList positions={c.positions} />
+                                            </div>
                                           </div>
                                         )}
 
-                                        {isRelevant(c.subjects) && (
-                                          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Disciplinas</span>
-                                            <p className="text-sm text-slate-600 font-medium leading-relaxed whitespace-pre-wrap">{c.subjects}</p>
-                                          </div>
-                                        )}
-                                      </div>
+                                        <div className="space-y-6">
+                                          {/* Módulo B: Smart Hiding (Etapas e Disciplinas) */}
+                                          {isRelevant(c.etapas) && (
+                                            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                                              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Etapas</span>
+                                              <p className="text-sm text-slate-600 font-medium leading-relaxed">{c.etapas}</p>
+                                            </div>
+                                          )}
 
-                                      {/* Módulo C: Paddock de Cargos */}
-                                      {c.positions && c.positions.length > 0 && isRelevant(c.positions[0]) && (
-                                        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                                          <div className="flex items-center gap-1.5 text-slate-700 mb-3">
-                                            <Briefcase size={16} />
-                                            <span className="text-sm font-semibold uppercase tracking-wider">Cargos Disponíveis</span>
-                                          </div>
-                                          <PositionsList positions={c.positions} />
+                                          {isRelevant(c.subjects) && (
+                                            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                                              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Disciplinas</span>
+                                              <p className="text-sm text-slate-600 font-medium leading-relaxed whitespace-pre-wrap">{c.subjects}</p>
+                                            </div>
+                                          )}
                                         </div>
-                                      )}
+                                      </div>
 
                                       {/* Módulo D: Zona de Ação */}
                                       <div className="flex flex-wrap gap-3 pt-2">
